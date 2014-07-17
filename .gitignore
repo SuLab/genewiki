@@ -52,3 +52,11 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+
+/assets
+
+/fixtures
+
+/scripts
+
+/old-assets/gene2pubmed.gz
