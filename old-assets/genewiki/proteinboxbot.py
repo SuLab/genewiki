@@ -5,32 +5,6 @@ import re, datetime, os, requests
 from mwclient.errors import *
 
 class ProteinBoxBot(object):
-    """
-      Loops through all GNF_Protein_box templates and updates them.
-    """
-
-    def __init__(self, genewiki):
-        try:
-            assert genewiki
-            assert genewiki.wp
-            assert genewiki.wp.credentials
-            self.genewiki = genewiki
-        except AssertionError:
-            raise TypeError("Must provide a valid, logged-in GeneWiki object.")
-
-    def extractEntrezFromPageName(self, page):
-        """
-          Returns the Entrez id, if any, from a given Page's name.
-
-          Arguments:
-          - `page`: a mwclient Page
-        """
-        entrez_regex = r'Template:PBB/([\d]*)'
-        match = re.search(entrez_regex, page.name)
-        if match and match.group(1):
-            return match.group(1)
-        else: return None
-
 
     def update(self, page):
         """

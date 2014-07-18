@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
+from django.conf import settings
+import urllib, subprocess, os, sys, datetime, mwclient
+
 
 '''
   Handles linking PDB structure images to ProteinBox templates.
 '''
-
-import urllib, subprocess, os, sys, datetime
-import mwclient
-
-try: import settings
-except ImportError:
-    print("Could not find settings.py.")
-    raise
 
 
 

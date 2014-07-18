@@ -1,22 +1,11 @@
-# -*- coding: utf-8 -*-
+from django.conf import settings
 
 import sys, json, urllib, re
-try: import settings
-except ImportEror:
-    print('''
-Could not import settings: have you edited settings.example.py and saved it as
-settings.py in the genewiki folder? For info, see settings.example.py.
-''')
-    raise
 
-from proteinbox import *
-import uniprot
-import rcsb
+from genewiki.wiki.textutils import ProteinBox
+from genewiki.bio.uniprot import uniprot_acc_for_entrez_id
+from genewiki.bio.rcsb import pdbs_for_uniprot
 import mygene
-
-BASE_URL = settings.mygene_base
-META_URL = settings.mygene_meta
-UNIP_URL = settings.uniprot_url
 
 MOUSE_TAXON_ID = 10090
 
@@ -82,7 +71,7 @@ def parse_go_category(entry):
 
 
 def _queryUniprot(entrez):
-    return uniprot.uniprotAccForEntrezId(entrez)
+    return uniprot_acc_for_entrez_id(entrez)
 
 
 def findReviewedUniprotEntry(entries, entrez):
@@ -146,11 +135,11 @@ def get_json_documents(entrez):
       Arguments:
       - `entrez`: human gene entrez id
     """
-    gene_json = getJson( BASE_URL + entrez )
-    meta_json = getJson( META_URL )
+    gene_json = getJson( settings.MYGENE_BASE + entrez )
+    meta_json = getJson( settings.MYGENE_META )
 
     homolog = get_homolog(entrez, MOUSE_TAXON_ID, gene_json)
-    homolog_json = getJson(BASE_URL+str(homolog)) if homolog else None
+    homolog_json = getJson( settings.MYGENE_BASE + str(homolog) ) if homolog else None
 
     return {'gene_json':gene_json, 'meta_json':meta_json, 'homolog_json':homolog_json}
 
@@ -182,7 +171,7 @@ def parse_json(gene_json, meta_json, homolog_json):
     # Currently mygene.info uses the out-of-date Ensembl to pull pdb
     # structures. Until it's patched to use RCSB, we do it ourselves.
     #box.setField("PDB", get(root, 'pdb'))
-    pdbs = rcsb.pdbs_for_uniprot(uniprot)
+    pdbs = pdbs_for_uniprot(uniprot)
     if not pdbs:
         pdbs = get(root, 'pdb') # backup plan
     box.setField("PDB", pdbs)

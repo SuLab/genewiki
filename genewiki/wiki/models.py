@@ -4,6 +4,8 @@ from django.conf import settings
 from genewiki.wiki.managers import BotManager, ArticleManager
 
 import mwclient, re
+from mwclient.errors import *
+
 
 class Bot(models.Model):
     username = models.CharField(max_length = 200, blank = False)
@@ -24,6 +26,15 @@ class Bot(models.Model):
       connection = mwclient.Site(settings.BASE_SITE)
       connection.login(self.username, self.password)
       return connection
+
+    def previous_actions(self, limit = 500):
+        '''
+            Prints the last 500 actions (title) the bot has taken
+        '''
+        connection = self.connection()
+        lists = connection.usercontributions(self.username, start=None, end=None, dir='older', namespace=None, prop=None, show=None, limit=limit)
+        for item in lists:
+            print item['title']
 
 
     def update_articles(self):
@@ -126,7 +137,7 @@ class Article(models.Model):
         error = None
         page = this.get_page()
 
-        if not wikitext.bots_allowed(page.edit()):
+        if not page.bots_allowed():
             return (None, Exception('Bot edits prohibited.'))
 
         try:
