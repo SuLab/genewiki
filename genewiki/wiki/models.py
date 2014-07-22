@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 
 from genewiki.wiki.managers import BotManager, ArticleManager
+from genewiki.wiki.textutils import generate_protein_box_for_existing_article
+from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
 
 import mwclient, re
 from mwclient.errors import *
@@ -39,18 +41,11 @@ class Bot(models.Model):
 
     def update_articles(self):
         connection = self.connection()
-
-        for page in connection.Pages['Category:Human_proteins']:
-          page_text = page.edit()
-          if '{{PBB|geneid=' in page_text:
-            article, created = Article.objects.get_or_create(title = page.page_title, bot = self)
-            article.text = page_text
-            article.save()
-
-        gpb = self.wp.Pages['Template:GNF_Protein_box']
+        gpb = connection.Pages['Template:GNF_Protein_box']
         for page in gpb.embeddedin('10'):
             if 'Template:PBB/' in page.name:
-                article, created = Article.objects.get_or_create(title = page.page_title, article_type = 'template', bot = self)
+                article, created = Article.objects.get_or_create(title = page.name, article_type = Article.INFOBOX)
+                article.text = page.edit()
                 article.save()
 
 
@@ -82,7 +77,11 @@ class Article(models.Model):
         return u'{0}'.format( self.title )
 
 
-    def get_entreze(self):
+    def url_for_article(self):
+        return u'http://{0}/wiki/{1}'.format( settings.BASE_SITE, self.title )
+
+
+    def get_entrez(self):
         entrez_regex = r'Template:PBB/([\d]*)'
         match = re.search(entrez_regex, self.title)
         if match and match.group(1):
@@ -96,6 +95,11 @@ class Article(models.Model):
         return connection.Pages[self.title]
 
 
+    def generate_protein_box(self):
+        entrez = self.get_entrez()
+        return get_protein_box_for_entrez(entrez)
+
+
     def bots_allowed(self):
         '''
           Returns true if the deny_bots regex finds no matches.
@@ -106,23 +110,24 @@ class Article(models.Model):
 
 
 
-    def update(self, page):
+    def update(self):
         '''
           Returns an updated infobox and summary from data gathered from the
           specified page.
-
-          Arguments:
-          - `page`: a mwclient Page
         '''
-        entrez = self.extractEntrezFromPageName(page)
         # Dictionary of fields to build a ProteinBox from
-        mgibox = mygeneinfo.parse(entrez)
+        mgibox = generate_protein_box_for_entrez( self.get_entrez() )
+        print mgibox
 
         # Returns processed ProteinBox object
-        wptext = wikitext.parse(page.edit())
+        current_box = generate_protein_box_for_existing_article( self.text )
+        print current_box
+
         # Run the comparision between the current box online
         # and the dictionary just generated from mygene
-        return wptext.updateWith(mgibox)
+        print self.url_for_article()
+        print current_box.updateWith( mgibox )
+        print ' - - - - - '
 
 
     def write(self, proteinbox, summary):

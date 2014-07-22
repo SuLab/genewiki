@@ -31,7 +31,7 @@ ebiserver = 'http://wwwdev.ebi.ac.uk/pdbe-apps/jsonizer/homologene/{}/'
 
 title_skeleton='File:Protein_{hugo_sym}_PDB_{pdb_id}.png'
 
-def getImage(proteinbox, use_experimental=True):
+def get_image(proteinbox, use_experimental=True):
     """Attempts to find a suitable image given a gene. Returns the image filename as
     it exists on Wikipedia commons, along with a suitable caption.
 

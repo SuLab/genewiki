@@ -19,13 +19,13 @@ def getJson(url):
             contents = contents.decode('utf-8')
         return json.loads(contents)
     except IOError as e:
-        print("Network error: are you connected to the internet?")
+        print('Network error: are you connected to the internet?')
         raise e
     finally:
         ufile.close()
 
 def get(json, key):
-    """
+    '''
       Provides the element at the specified key in the given JSON.
       If the json object is a dict and the key is valid, returns that element.
       If it's a list and has an element at json[0], it calls itself with json[0]
@@ -40,7 +40,7 @@ def get(json, key):
       Arguments:
       - `json`: The JSON tree to parse from
       - `node`: The top-level node to attempt to return.
-    """
+    '''
 
     result = u''
     if isinstance(json, dict):
@@ -75,7 +75,7 @@ def _queryUniprot(entrez):
 
 
 def findReviewedUniprotEntry(entries, entrez):
-    """
+    '''
       Attempts to return the first reviewed entry in a given dict of dbname:id
       pairs for a gene's UniProt entries.
       If a reviewed entry is not found, it attempts to query Uniprot directly for one.
@@ -83,7 +83,7 @@ def findReviewedUniprotEntry(entries, entrez):
 
       Arguments:
       - `entries`: a dict of entries, e.g {'Swiss-Prot':'12345', 'TrEMBL':'67890'}
-    """
+    '''
     if not isinstance(entries, dict) and not entrez:
         return u''
     elif entrez:
@@ -108,14 +108,14 @@ def findReviewedUniprotEntry(entries, entrez):
 
 
 def get_homolog(gene, taxon, json):
-    """
+    '''
       Returns the homologous gene for a given gene in a given taxon.
 
       Arguments:
       - `gene`:  the original gene
       - `taxon`: the taxon of the species in which to find a homolog
       - `json`:  the mygene.info json document for original gene
-    """
+    '''
     homologs = get(get(json, 'homologene'), 'genes')
     # isolate our particular taxon (returns [[taxon, gene]])
     if homologs:
@@ -127,14 +127,15 @@ def get_homolog(gene, taxon, json):
 
 
 def get_json_documents(entrez):
-    """
+    '''
       Returns the three JSON documents needed to construct a ProteinBox.
       Dict structure: {gene:json, meta:json, homolog:json}
       For use as a helper method for the parse_json() method.
 
       Arguments:
       - `entrez`: human gene entrez id
-    """
+    '''
+    entrez = str(entrez)
     gene_json = getJson( settings.MYGENE_BASE + entrez )
     meta_json = getJson( settings.MYGENE_META )
 
@@ -145,14 +146,28 @@ def get_json_documents(entrez):
 
 
 def parse_json(gene_json, meta_json, homolog_json):
-    """
+    '''
       Returns a ProteinBox based on the provided JSON documents.
 
       Arguments:
       - `json_document`: mygene.info json document for any given gene
       - `meta_json`: mygene.info metadata document
       - `homolog_json`: mygene.info json document for corresponding mouse gene
-    """
+    '''
+
+    print gene_json
+    print '/ / / /'
+
+    print meta_json
+    print '/ / / /'
+
+    print homolog_json
+    print '/ / / /'
+
+    mg = mygene.MyGeneInfo()
+    #mg.getgene(3702, 'name,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos', species=10090)
+    gene_info = mg.getgene(3702, 'name,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos,go', species='human')
+
     box = ProteinBox()
     root = gene_json
     meta = meta_json
@@ -160,66 +175,65 @@ def parse_json(gene_json, meta_json, homolog_json):
     name = get(root, 'name')
     if re.match(r'\w', name):
         name = name[0].capitalize()+name[1:]
-    box.setField("Name", name)
+    box.setField('Name', name)
 
     entrez = get(root, 'entrezgene')
-    box.setField("Hs_EntrezGene", entrez)
+    box.setField('Hs_EntrezGene', entrez)
 
     uniprot = findReviewedUniprotEntry(get(root, 'uniprot'), entrez)
-    box.setField("Hs_Uniprot", uniprot)
+    box.setField('Hs_Uniprot', uniprot)
 
     # Currently mygene.info uses the out-of-date Ensembl to pull pdb
     # structures. Until it's patched to use RCSB, we do it ourselves.
-    #box.setField("PDB", get(root, 'pdb'))
+    #box.setField('PDB', get(root, 'pdb'))
     pdbs = pdbs_for_uniprot(uniprot)
     if not pdbs:
         pdbs = get(root, 'pdb') # backup plan
-    box.setField("PDB", pdbs)
-    box.setField("HGNCid", get(root, 'HGNC'))
-    box.setField("Symbol", get(root, 'symbol'))
-    box.setField("AltSymbols", get(root, 'alias'))
-    box.setField("OMIM", get(root, 'MIM'))
-    box.setField("ECnumber", get(root, 'ec'))
-    box.setField("Homologene", get(get(root, 'homologene'), 'id'))
+    box.setField('PDB', pdbs)
+    box.setField('HGNCid', get(root, 'HGNC'))
+    box.setField('Symbol', get(root, 'symbol'))
+    box.setField('AltSymbols', get(root, 'alias'))
+    box.setField('OMIM', get(root, 'MIM'))
+    box.setField('ECnumber', get(root, 'ec'))
+    box.setField('Homologene', get(get(root, 'homologene'), 'id'))
 
-    box.setField("Hs_Ensembl", get(get(root, 'ensembl'), 'gene'))
-    box.setField("Hs_RefseqProtein", get(get(get(root, 'refseq'), 'protein'), 0))
-    box.setField("Hs_RefseqmRNA", get(get(get(root, 'refseq'), 'rna'), 0))
-    box.setField("Hs_GenLoc_db", get(get(meta, 'GENOME_ASSEMBLY'), 'human'))
-    box.setField("Hs_GenLoc_chr", get(get(root, 'genomic_pos'), 'chr'))
-    box.setField("Hs_GenLoc_start", get(get(root, 'genomic_pos'), 'start'))
-    box.setField("Hs_GenLoc_end", get(get(root, 'genomic_pos'), 'end'))
-    box.setField("path", "PBB/{}".format(box.fieldsdict['Hs_EntrezGene']))
+    box.setField('Hs_Ensembl', get(get(root, 'ensembl'), 'gene'))
+    box.setField('Hs_RefseqProtein', get(get(get(root, 'refseq'), 'protein'), 0))
+    box.setField('Hs_RefseqmRNA', get(get(get(root, 'refseq'), 'rna'), 0))
+    box.setField('Hs_GenLoc_db', get(get(meta, 'GENOME_ASSEMBLY'), 'human'))
+    box.setField('Hs_GenLoc_chr', get(get(root, 'genomic_pos'), 'chr'))
+    box.setField('Hs_GenLoc_start', get(get(root, 'genomic_pos'), 'start'))
+    box.setField('Hs_GenLoc_end', get(get(root, 'genomic_pos'), 'end'))
+    box.setField('path', 'PBB/{}'.format(box.fieldsdict['Hs_EntrezGene']))
     homologs = get(get(root, 'homologene'), 'genes')
 
     if get(root, 'go'):
-        box.setField("Component", parse_go_category(get(root['go'], 'CC')))
-        box.setField("Function", parse_go_category(get(root['go'], 'MF')))
-        box.setField("Process", parse_go_category(get(root['go'], 'BP')))
+        box.setField('Component', parse_go_category(get(root['go'], 'CC')))
+        box.setField('Function', parse_go_category(get(root['go'], 'MF')))
+        box.setField('Process', parse_go_category(get(root['go'], 'BP')))
 
     if homolog_json:
         root = homolog_json
-        box.setField("Mm_EntrezGene", get(root, 'entrezgene'))
-        box.setField("Mm_Ensembl", get(get(root, 'ensembl'), 'gene'))
-        box.setField("Mm_RefseqProtein", get(get(get(root, 'refseq'), 'protein'), 0))
-        box.setField("Mm_RefseqmRNA", get(get(get(root, 'refseq'), 'rna'), 0))
-        box.setField("Mm_GenLoc_db", get(get(meta, 'GENOME_ASSEMBLY'), 'mouse'))
-        box.setField("Mm_GenLoc_chr", get(get(root, 'genomic_pos'), 'chr'))
-        box.setField("Mm_GenLoc_start", get(get(root, 'genomic_pos'), 'start'))
-        box.setField("Mm_GenLoc_end", get(get(root, 'genomic_pos'), 'end'))
+        box.setField('Mm_EntrezGene', get(root, 'entrezgene'))
+        box.setField('Mm_Ensembl', get(get(root, 'ensembl'), 'gene'))
+        box.setField('Mm_RefseqProtein', get(get(get(root, 'refseq'), 'protein'), 0))
+        box.setField('Mm_RefseqmRNA', get(get(get(root, 'refseq'), 'rna'), 0))
+        box.setField('Mm_GenLoc_db', get(get(meta, 'GENOME_ASSEMBLY'), 'mouse'))
+        box.setField('Mm_GenLoc_chr', get(get(root, 'genomic_pos'), 'chr'))
+        box.setField('Mm_GenLoc_start', get(get(root, 'genomic_pos'), 'start'))
+        box.setField('Mm_GenLoc_end', get(get(root, 'genomic_pos'), 'end'))
 
         mouse_uniprot = findReviewedUniprotEntry( get(root, 'uniprot'), get(root, 'entrezgene') )
-        box.setField("Mm_Uniprot", mouse_uniprot )
+        box.setField('Mm_Uniprot', mouse_uniprot )
 
     return box
 
-def parse(entrez):
+def generate_protein_box_for_entrez(entrez):
     '''
       Returns a ProteinBox object from a given Entrez id.
 
-      Arguments:
+      Ame,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos', species=10090)rguments:
         - `entrez`: a human entrez gene id
     '''
-    #print "MYGENE :: ", get_json_documents(entrez)
-    #print '\n- - - - - - - - - - - -  -\n'
     return parse_json(**get_json_documents(entrez))
+

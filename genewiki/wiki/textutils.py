@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-
-'''
-  Utility methods for parsing and extracting infobox templates.
-'''
-
+from django.conf import settings
 import re, copy
 
 
@@ -126,6 +121,7 @@ class ProteinBox(object):
         else:
             return obj
 
+
     def setField(self, field_name, field_value, strict=True):
         '''
           Sets a field in the fieldsdict using the fields as a validity check.
@@ -163,6 +159,7 @@ class ProteinBox(object):
 
         self.fieldsdict = fieldsdict
         return fieldsdict
+
 
     def updateWith(self, targetbox):
         '''
@@ -208,6 +205,7 @@ class ProteinBox(object):
 
         return new, summary, updatedFields
 
+
     def linkImage(self):
         '''
           If a pdb structure and hugo symbol are available, but no image field set,
@@ -215,10 +213,10 @@ class ProteinBox(object):
         '''
         if (self.fieldsdict['PDB'] and self.fieldsdict['Symbol']
             and not self.fieldsdict['image']):
-            from genewiki import images
+            from genewiki.bio.images import get_image
             pdb = self.fieldsdict['PDB'][0]
             sym = self.fieldsdict['Symbol']
-            image, caption = images.getImage(self, use_experimental=True)
+            image, caption = get_image(self, use_experimental=True)
             self.setField('image', image)
             self.setField('image_source', caption)
 
@@ -312,6 +310,9 @@ class ProteinBox(object):
         return self.wikitext()
 
 
+'''
+  Utility methods for parsing and extracting infobox templates.
+'''
 
 def contains_template(source, templatename):
     '''
@@ -453,7 +454,7 @@ def restore_references(wikitext, references, salt):
     return restored
 
 
-def parse(page_source):
+def generate_protein_box_for_existing_article(page_source):
     '''
       Parses a page containing a GNF_Protein_box template and returns a ProteinBox
       object with field values corresponding to the template's.
@@ -573,8 +574,7 @@ def parse(page_source):
         i += 1
 
     # splits up multiple value fields properly
-    pbox = postprocess(fieldvalues)
-    return pbox
+    return postprocess(fieldvalues)
 
 class ParseError(Exception):
     '''

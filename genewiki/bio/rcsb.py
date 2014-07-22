@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 '''
   Methods for retrieving information about PDB structures from RCSB.
