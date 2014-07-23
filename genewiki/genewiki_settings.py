@@ -18,10 +18,5 @@ TEMPLATE_NAME = 'GNF_Protein_box'
 '''
 PYMOL = '/usr/bin/pymol'
 
-'''
-    MyGene.Info Configuration
-    These are fairly static and should not need to be changed.
-'''
-MYGENE_BASE = 'http://mygene.info/gene/'
-MYGENE_META = 'http://mygene.info/metadata'
+MOUSE_TAXON_ID = 10090
 
