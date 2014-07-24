@@ -14,7 +14,7 @@ head
         meta(name='copyright', content='PROJECT DEFAULT')
         meta(name='application-name', content='')
 
-        meta(property='og:title', content='GeneWiki')
+        meta(property='og:title', content='CleanIt')
         meta(property='og:type', content='article')
         meta(property='og:image', content='#{STATIC_URL}static/img/logo.jpg')
         meta(property='og:url', content='http://example.com')
@@ -26,11 +26,10 @@ head
         meta(name='twitter:image', content='#{STATIC_URL}static/img/logo.jpg')
 
     block head-title
-      title TaskVino
+      title GeneWiki
 
-    link(rel='stylesheet', href='//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css')
-    link(rel='stylesheet', href='/static/css/bootstrap-theme.css')
-    link(rel='stylesheet', href='/static/css/selectize.bootstrap3.css')
+    link(rel='stylesheet', href='#{STATIC_URL}css/bootstrap.min.css')
+    link(rel='stylesheet', href='#{STATIC_URL}css/bootstrap-theme.min.css')
     link(rel='stylesheet', href='#{STATIC_URL}css/style.css')
 
 body
@@ -41,13 +40,10 @@ body
     block pre-footer
     block footer
 
-        script(src='#{STATIC_URL}js/libs/jquery-2.1.0.min.js')
+        script(src='#{STATIC_URL}js/libs/jquery-2.1.1.min.js')
         script(src='#{STATIC_URL}js/libs/underscore-min.js')
-        script(src='#{STATIC_URL}js/libs/backbone-min.js')
-        script(src='#{STATIC_URL}js/libs/backbone.marionette.min.js')
         script(src='#{STATIC_URL}js/libs/bootstrap.min.js')
-        script(src='#{STATIC_URL}js/libs/d3.min.js')
-        script(src='#{STATIC_URL}js/libs/selectize.min.js')
+        script(src='#{STATIC_URL}js/libs/d3.v3.min.js')
         script(src='#{STATIC_URL}js/app.js')
 
         - if not debug

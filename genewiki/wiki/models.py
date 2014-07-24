@@ -76,6 +76,9 @@ class Article(models.Model):
     def __unicode__(self):
         return u'{0}'.format( self.title )
 
+    class Meta:
+        ordering = ('-updated',)
+
 
     def url_for_article(self):
         return u'http://{0}/wiki/{1}'.format( settings.BASE_SITE, self.title )
@@ -147,33 +150,14 @@ class Article(models.Model):
 
         try:
             result = page.save(str(proteinbox), summary, minor=True)
+
+            self.text = page.edit()
+            self.save()
+
             return (result, None)
         except MwClientError as e:
             error = e
         return (None, error)
 
 
-
-
-#
-#    class Meta:
-#        abstract = True
-#
-
-# class GenePage(Article):
-# p.backlinks         p.embeddedin        p.images            p.name              p.redirect          p.templates
-# p.can               p.exists            p.langlinks         p.namespace         p.revision          p.touched
-# p.categories        p.extlinks          p.last_rev_time     p.normalize_title   p.revisions
-# p.delete            p.get_expanded      p.length            p.page_title        p.save
-# p.edit              p.get_token         p.links             p.protection        p.site
-# p.edit_time         p.handle_edit_error p.move              p.purge             p.strip_namespace
-
-    # gene_id = models.CharField(max_length=200, blank = False)
-    # name = models.CharField(max_length=200, blank = False)
-    # symbol = models.CharField(max_length=200, blank = False)
-    # summary = models.CharField(max_length=200, blank = False)
-    # chromosome = models.CharField(max_length=200, blank = False)
-    # currentdate = models.CharField(max_length=200, blank = False)
-    # citations = models.CharField(max_length=200, blank = False)
-    # footer = models.CharField(max_length=200, blank = False)
 

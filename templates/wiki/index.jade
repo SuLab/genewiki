@@ -1,0 +1,56 @@
+extends base
+
+- load humanize
+
+block content
+
+  .container.head-space-xl
+    .row
+      .col-md-8.col-md-offset-2
+
+          table.table.table-striped.table-hover
+            - if articles.paginator.count == 0
+              tr
+                td
+                  | No Articles
+            - else
+              tr
+                th
+                  | Title
+                th
+                  | Updated
+                th
+
+              - for article in articles
+                tr
+                  td
+                    a(href='https://en.wikipedia.org/wiki/{{article.title}}', target='_blank')
+                      | #{ article.title }
+
+                  td
+                    | #{ article.updated|naturaltime }
+
+                  td
+                    form(role='form', method='POST', action='/wiki/article/{{article.pk}}/update/').form-inline.ajax-post
+                      {% csrf_token %}
+                      button(type='submit').btn.btn-sm.btn-success
+                        | Run
+
+
+          .row
+            ul.pagination
+              - if articles.has_previous
+                li
+                  a(href='/wiki/page/{{articles.previous_page_number}}')
+                    | &laquo;
+
+              li
+                a(href='#')
+                  | Page {{ articles.number }} of {{ articles.paginator.num_pages }}
+
+              - if articles.has_next
+                li
+                  a(href='/wiki/page/{{articles.next_page_number}}')
+                    | &raquo;
+
+

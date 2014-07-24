@@ -10,15 +10,8 @@ from celery import task
 @task()
 def collect_template_pages():
     bot = Bot.objects.filter(service_type = 'wiki').first()
-    connection = bot.connection()
-    pages = connection.Pages['Template:GNF_Protein_box']
-    for page in pages.embeddedin('10'):
-        print page.name
-        if 'Template:PBB/' in page.name:
-            article, created = Article.objects.get_or_create(title = page.name)
-            article.text = page.edit()
-            article.article_type = Article.INFOBOX
-            article.save()
+    bot.update_articles()
+
 
 @task()
 def run():
