@@ -28,56 +28,56 @@ class ProteinBox(object):
     # multiple values, the regex should match each value. For field values in the form of a
     # dict, the regex should match the keys.
     fields = {
-        "Name":         default,
-        "image":        default,
-        "image_source": default,
-        "PDB":          r'^\w{4}$',
-        "HGNCid":       generic,
-        "MGIid":        generic,
-        "Symbol":       generic,
-        "AltSymbols":   default,
-        "IUPHAR":       default,
-        "ChEMBL":       default,
-        "OMIM":         r'^\d{6}$',
-        # "ECnumber":     r'^(\d+\.?){4}$',
-        "ECnumber":     default,
-        "Homologene":   default,    # could not find source for this
-        "GeneAtlas_image1":     default,
-        "GeneAtlas_image2":     default,
-        "GeneAtlas_image3":     default,
-        "Protein_domain_image": default,
-        "Function":         (r'^GO:\d+$', default),
-        "Component":        (r'^GO:\d+$', default),
-        "Process":          (r'^GO:\d+$', default),
-        "Hs_EntrezGene":    digits,
-        "Hs_Ensembl":       generic,
-        "Hs_RefseqmRNA":    r'NM_\d+(\.\d+)?$',
-        "Hs_RefseqProtein": r'NP_\d+(\.\d+)?$',
-        "Hs_GenLoc_db":     r'(?i)hg\d+$',
-        "Hs_GenLoc_chr":    default,
-        "Hs_GenLoc_start":  digits,
-        "Hs_GenLoc_end":    digits,
-        "Hs_Uniprot":       r'^(?i)[a-z0-9]{6}$',
-        "Mm_EntrezGene":    digits,
-        "Mm_Ensembl":       generic,
-        "Mm_RefseqmRNA":    r'NM_\d+(\.\d+)?$',
-        "Mm_RefseqProtein": r'NP_\d+(\.\d+)?$',
-        "Mm_GenLoc_db":     r'(?i)mm\d+$',
-        "Mm_GenLoc_chr":    default,
-        "Mm_GenLoc_start":  digits,
-        "Mm_GenLoc_end":    digits,
-        "Mm_Uniprot":       r'^(?i)[a-z0-9]{6}$',
-        "path":             r'^PBB\/\d+$',
-        "before_text":      default,
-        "after_text":       default}
+        'Name':         default,
+        'image':        default,
+        'image_source': default,
+        'PDB':          r'^\w{4}$',
+        'HGNCid':       generic,
+        'MGIid':        generic,
+        'Symbol':       generic,
+        'AltSymbols':   default,
+        'IUPHAR':       default,
+        'ChEMBL':       default,
+        'OMIM':         r'^\d{6}$',
+        # 'ECnumber':     r'^(\d+\.?){4}$',
+        'ECnumber':     default,
+        'Homologene':   default,    # could not find source for this
+        'GeneAtlas_image1':     default,
+        'GeneAtlas_image2':     default,
+        'GeneAtlas_image3':     default,
+        'Protein_domain_image': default,
+        'Function':         (r'^GO:\d+$', default),
+        'Component':        (r'^GO:\d+$', default),
+        'Process':          (r'^GO:\d+$', default),
+        'Hs_EntrezGene':    digits,
+        'Hs_Ensembl':       generic,
+        'Hs_RefseqmRNA':    r'NM_\d+(\.\d+)?$',
+        'Hs_RefseqProtein': r'NP_\d+(\.\d+)?$',
+        'Hs_GenLoc_db':     r'(?i)hg\d+$',
+        'Hs_GenLoc_chr':    default,
+        'Hs_GenLoc_start':  digits,
+        'Hs_GenLoc_end':    digits,
+        'Hs_Uniprot':       r'^(?i)[a-z0-9]{6}$',
+        'Mm_EntrezGene':    digits,
+        'Mm_Ensembl':       generic,
+        'Mm_RefseqmRNA':    r'NM_\d+(\.\d+)?$',
+        'Mm_RefseqProtein': r'NP_\d+(\.\d+)?$',
+        'Mm_GenLoc_db':     r'(?i)mm\d+$',
+        'Mm_GenLoc_chr':    default,
+        'Mm_GenLoc_start':  digits,
+        'Mm_GenLoc_end':    digits,
+        'Mm_Uniprot':       r'^(?i)[a-z0-9]{6}$',
+        'path':             r'^PBB\/\d+$',
+        'before_text':      default,
+        'after_text':       default}
 
     # Fields that can hold multiple values
-    multivalue = ["PDB",
-                  "AltSymbols",
-                  "ECnumber",
-                  "Function",
-                  "Component",
-                  "Process"]
+    multivalue = ['PDB',
+                  'AltSymbols',
+                  'ECnumber',
+                  'Function',
+                  'Component',
+                  'Process']
 
     def validate(self, field, value):
 
@@ -87,7 +87,7 @@ class ProteinBox(object):
         if field in self.multivalue:
             for entry in value:
                 if field in ['Function', 'Component', 'Process']:
-                    if not re.match(self.fields[field][0], entry.keys()[0]):
+                    if not re.match( self.fields[field][0], entry ):
                         return False
                 elif not re.match(self.fields[field], entry):
                     return False
@@ -112,21 +112,15 @@ class ProteinBox(object):
             return unicode(obj, 'utf8')
         elif isinstance(obj, int):
             return unicode(str(obj), 'utf8')
-        elif isinstance(obj, list):
-            uni_obj = []
-            for item in obj:
-                item = self.coerce_unicode(item)
-                uni_obj.append(item)
-            return uni_obj
         else:
             return obj
 
 
-    def setField(self, field_name, field_value, strict=True):
+    def setField(self, field_name, field_value):
         '''
           Sets a field in the fieldsdict using the fields as a validity check.
-          If 'strict' is True (default), checks the field against a regex. These
-          aren't foolproof- if there are problems, this should be disabled.
+          Checks the field against a regex. These aren't foolproof- if
+          there are problems, this should be disabled.
 
           The field value must be a unicode object (some coercion will be tried,
           but may fail).
@@ -139,10 +133,10 @@ class ProteinBox(object):
         field_value = self.coerce_unicode(field_value)
 
         if field_name in self.fields:
-            if strict:
-                if not self.validate(field_name, field_value):
-                    print "validation failed: ", field_name, field_value
-                    return fieldsdict
+            if not field_name in self.multivalue and not self.validate(field_name, field_value):
+                print 'validation failed: ', field_name, field_value
+                return fieldsdict
+
 
             if field_name in self.multivalue:
                 if isinstance(field_value, list):
@@ -155,7 +149,7 @@ class ProteinBox(object):
                     pass
                 fieldsdict[field_name] = field_value
         else:
-            raise NameError("Specified field does not exist. Reference the fields list for valid names.")
+            raise NameError('Specified field does not exist. Reference the fields list for valid names.')
 
         self.fieldsdict = fieldsdict
         return fieldsdict
@@ -179,7 +173,7 @@ class ProteinBox(object):
         try:
             tgt = targetbox.fieldsdict
         except AttributeError:
-            raise TypeError("Cannot update with target (missing fieldsdict attribute). Ensure target is a ProteinBox.")
+            raise TypeError('Cannot update with target (missing fieldsdict attribute). Ensure target is a ProteinBox.')
 
         new = ProteinBox()
         updatedFields = {}
@@ -196,12 +190,12 @@ class ProteinBox(object):
                 new.setField(field, srcval)
 
         # Default summary message; changes if fields were updated
-        summary = "Minor aesthetic updates."
+        summary = 'Minor aesthetic updates.'
         if updatedFields:
-            summary = "Updated {} fields: ".format(len(updatedFields))
+            summary = 'Updated {} fields: '.format(len(updatedFields))
             for field in updatedFields:
-                summary = summary + field + ", "
-            summary = summary.rstrip(", ")
+                summary = summary + field + ', '
+            summary = summary.rstrip(', ')
 
         return new, summary, updatedFields
 
@@ -220,6 +214,7 @@ class ProteinBox(object):
             self.setField('image', image)
             self.setField('image_source', caption)
 
+
     def wikitext(self):
         '''
           Returns the unicode wikitext representation of the fields in this box.
@@ -228,33 +223,36 @@ class ProteinBox(object):
         # We have to handle each multivalue field specially- can't be outputting
         # bracketed array representations into the final wikitext :)
         for field in self.multivalue:
-            if field == "PDB":
-                pdbstr = ""
+            if field == 'PDB':
+                pdbstr = ''
                 for i in fieldsdict[field]:
                     # Make sure we actually have something
                     if i.strip():
-                        pdbstr = pdbstr + "{{PDB2|" + i + "}}, "
+                        pdbstr = pdbstr + '{{PDB2|' + i + '}}, '
                 pdbstr = pdbstr.strip().strip(',')
                 fieldsdict[field] = pdbstr
-            elif field == "AltSymbols":
+
+            elif field == 'AltSymbols':
                 if fieldsdict[field]:
-                    altsym = "; "
-                    altsym = altsym + "; ".join(fieldsdict[field])
+                    altsym = '; '
+                    altsym = altsym + '; '.join(fieldsdict[field])
                     fieldsdict[field] = altsym
-            elif field == "ECnumber":
+
+            elif field == 'ECnumber':
                 ecnum = ', '.join(fieldsdict[field])
                 fieldsdict[field] = ecnum
+
             else:
-                goterms = ""
+                goterms = ''
                 for entry in fieldsdict[field]:
                     for term in entry:
                         text = entry[term]
-                        formatted = "{{{{GNF_GO|id={} |text = {}}}}} ".format(term, text)
+                        formatted = '{{{{GNF_GO|id={} |text = {}}}}} '.format(term, text)
                         goterms = goterms + formatted
                 goterms = goterms.rstrip(' ')
                 fieldsdict[field] = goterms
 
-        output = u"""{before_text}{{{{GNF_Protein_box
+        output = u'''{before_text}{{{{GNF_Protein_box
  | Name = {Name}
  | image = {image}
  | image_source = {image_source}
@@ -294,7 +292,7 @@ class ProteinBox(object):
  | Mm_GenLoc_end = {Mm_GenLoc_end}
  | Mm_Uniprot = {Mm_Uniprot}
  | path = {path}
-}}}}{after_text}"""
+}}}}{after_text}'''
         output = output.format(**fieldsdict)
         return output
 
@@ -332,7 +330,7 @@ def isolate_template(source, templatename):
     '''
     start = contains_template(source, templatename)
     if not start:
-        raise ValueError("The source does not appear to contain the template.")
+        raise ValueError('The source does not appear to contain the template.')
     opened = closed = -1
     level = 0
     subsource = source[start-2:]
@@ -363,8 +361,8 @@ def postprocess(fieldvalues):
       during updates or comparisons. This is not meant to be used independently.
     '''
     pbox = ProteinBox()
-    #print "DEBUG: "+str(fieldvalues.keys())
-    #for val in fieldvalues: print "DEBUG: {}:{}".format(val, fieldvalues[val])
+    #print 'DEBUG: '+str(fieldvalues.keys())
+    #for val in fieldvalues: print 'DEBUG: {}:{}'.format(val, fieldvalues[val])
     for field in pbox.fields:
         # Handle splitting up multiple value fields
         if field in pbox.multivalue:
@@ -418,7 +416,7 @@ def strip_references(wikitext):
 
     source = copy.copy(wikitext)
     # First we ensure that UNIQ really is unique by appending characters
-    UNIQ           = "x7fUNIQ"
+    UNIQ           = 'x7fUNIQ'
     while UNIQ in source:
         UNIQ       = UNIQ+'f'
     # Then we do the replacements
@@ -485,7 +483,7 @@ def generate_protein_box_for_existing_article(page_source):
     source, references, salt = strip_references(source)
 
     # Bugfix: removing an error message inserted by a previous run...
-    source = source.replace("{{PDB2|Problem creating Query from XML: Problem with parms! }}, {{PDB2|<orgPdbQuery><queryType>org.pdb.query.simple.UpAccessionIdQuery</queryType><accessionIdList></accessionIdList></orgPdbQuery>}}", '')
+    source = source.replace('{{PDB2|Problem creating Query from XML: Problem with parms! }}, {{PDB2|<orgPdbQuery><queryType>org.pdb.query.simple.UpAccessionIdQuery</queryType><accessionIdList></accessionIdList></orgPdbQuery>}}', '')
 
     # Finally, we remove any leading and trailing newlines and curly braces
     source = source.strip('\n').strip('{}')
@@ -565,7 +563,7 @@ def generate_protein_box_for_existing_article(page_source):
                 nameParsed  = False
                 valueParsed = False
             except ValueError:
-                raise ParseError("Malformed wikitext- parsing failed.")
+                raise ParseError('Malformed wikitext- parsing failed.')
             except TypeError as e:
                 print value
                 raise e

@@ -105,8 +105,11 @@ def generate_protein_box_for_entrez(entrez):
     box.setField('ECnumber', root.get('ec'))
     box.setField('Homologene', root.get('homologene').get('id'))
     box.setField('Hs_Ensembl', root.get('ensembl').get('gene'))
-    box.setField('Hs_RefseqProtein', root.get('refseq').get('protein')) # (TODO) array possible?
-    box.setField('Hs_RefseqmRNA', root.get('refseq').get('rna')) # (TODO) array possible
+
+    refseq = root.get('refseq')
+    box.setField('Hs_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein'))
+    box.setField('Hs_RefseqmRNA', refseq.get('rna')[0] if isinstance(refseq.get('rna'), list) else refseq.get('rna'))
+
     box.setField('Hs_GenLoc_db', meta.get('genome_assembly').get('human'))
     box.setField('Hs_GenLoc_chr', root.get('genomic_pos').get('chr'))
     box.setField('Hs_GenLoc_start', root.get('genomic_pos').get('start'))
@@ -115,10 +118,7 @@ def generate_protein_box_for_entrez(entrez):
 
     go = root.get('go', None)
     if go:
-        # (TODO) Do I set the field to the string or array of dicts?
-        cc = parse_go_category( go.get('CC') )
-        print cc
-        box.setField('Component', cc)
+        box.setField('Component', parse_go_category( go.get('CC') ))
         box.setField('Function', parse_go_category( go.get('MF') ))
         box.setField('Process', parse_go_category( go.get('BP') ))
 
@@ -127,8 +127,11 @@ def generate_protein_box_for_entrez(entrez):
 
         box.setField('Mm_EntrezGene', homolog.get('entrezgene'))
         box.setField('Mm_Ensembl', homolog.get('ensembl').get('gene'))
-        box.setField('Mm_RefseqProtein', homolog.get('refseq').get('protein')) # (TODO) array possible?
-        box.setField('Mm_RefseqmRNA', homolog.get('refseq').get('rna')) # (TODO) array possible?
+
+        refseq = homolog.get('refseq')
+        box.setField('Mm_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein') )
+        box.setField('Mm_RefseqmRNA',  refseq.get('rna')[0] if isinstance(refseq.get('rna'), list) else refseq.get('rna') )
+
         box.setField('Mm_GenLoc_db', meta.get('genome_assembly').get('mouse'))
         box.setField('Mm_GenLoc_chr', homolog.get('genomic_pos').get('chr'))
         box.setField('Mm_GenLoc_start', homolog.get('genomic_pos').get('start'))

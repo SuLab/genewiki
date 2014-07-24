@@ -117,16 +117,16 @@ class Article(models.Model):
         '''
         # Dictionary of fields to build a ProteinBox from
         mgibox = generate_protein_box_for_entrez( self.get_entrez() )
-        print mgibox
 
         # Returns processed ProteinBox object
         current_box = generate_protein_box_for_existing_article( self.text )
-        print current_box
 
         # Run the comparision between the current box online
         # and the dictionary just generated from mygene
         print self.url_for_article()
-        print current_box.updateWith( mgibox )
+        updated, summary, updatedfields = current_box.updateWith( mgibox )
+        res = self.write(updated, summary)
+        print res
         print ' - - - - - '
 
 
@@ -140,9 +140,9 @@ class Article(models.Model):
           - `proteinbox`: an updated proteinbox to write
         '''
         error = None
-        page = this.get_page()
+        page = self.get_page()
 
-        if not page.bots_allowed():
+        if not self.bots_allowed():
             return (None, Exception('Bot edits prohibited.'))
 
         try:
