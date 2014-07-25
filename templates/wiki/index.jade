@@ -33,7 +33,8 @@ block content
                   td
                     form(role='form', method='POST', action='/wiki/article/{{article.pk}}/update/').form-inline.ajax-post
                       {% csrf_token %}
-                      button(type='submit').btn.btn-sm.btn-success
+                      button(type='submit', data-style='zoom-out', data-color='green', data-size='s').btn.btn-sm.btn-success.ladda-button
+
                         | Run
 
 

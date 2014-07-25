@@ -366,6 +366,7 @@ def postprocess(fieldvalues):
     for field in pbox.fields:
         # Handle splitting up multiple value fields
         if field in pbox.multivalue:
+            print field, fieldvalues[field]
             if field == 'PDB' and fieldvalues[field]:
                 regex = r'\{\{PDB2\|([\w\d]*)\}\}'
                 pdbs = []
@@ -373,6 +374,7 @@ def postprocess(fieldvalues):
                     # appends individual PBD identifiers
                     pdbs.append(match.group(1))
                     pbox.setField(field, pdbs)
+
             elif field == 'AltSymbols' and fieldvalues[field]:
                 if not re.search(r'[\w\d]+', fieldvalues[field]):
                     # there's only junk in here; set the value as None
@@ -383,15 +385,19 @@ def postprocess(fieldvalues):
                     alts = filter(lambda x: x, alts)
                     alts = filter(lambda x: x != ';', alts)
                     pbox.setField(field, alts)
+
             elif field == 'ECnumber' and fieldvalues[field]:
                 ecs = fieldvalues[field].split(', ')
                 ecs = filter(lambda x:x, ecs)
                 pbox.setField(field, ecs)
+
             elif fieldvalues[field]: # One of the GO fields
                 # this regex isolates the GO term and the description into group 1 and 2
                 # we do this to avoid any junk or invalid markup in these fields
                 regex = r'\{\{GNF_GO\s?\|\s?id=(GO:[\d]*)\s?\|\s?text\s?=\s?([^\}]*)\}\}'
                 goterms = []
+                print '/ / / / / / / / / /'
+                print field, fieldvalues[field]
                 for match in re.finditer(regex, fieldvalues[field]):
                     goterms.append({match.group(1):match.group(2)})
                 pbox.setField(field, goterms)

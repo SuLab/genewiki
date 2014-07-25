@@ -7,6 +7,8 @@ import sys, json, re, mygene
 
 
 def parse_go_category(entry):
+    if entry is None: return []
+
     # single term:
     if 'term' in entry:
         return {entry['id']:entry['term']}
@@ -104,16 +106,19 @@ def generate_protein_box_for_entrez(entrez):
     box.setField('OMIM', root.get('MIM'))
     box.setField('ECnumber', root.get('ec'))
     box.setField('Homologene', root.get('homologene').get('id'))
-    box.setField('Hs_Ensembl', root.get('ensembl').get('gene'))
+    ensembl = root.get('ensembl')
+    box.setField('Hs_Ensembl', ensembl[0].get('gene') if isinstance(ensembl, list) else ensembl.get('gene') )
 
     refseq = root.get('refseq')
     box.setField('Hs_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein'))
     box.setField('Hs_RefseqmRNA', refseq.get('rna')[0] if isinstance(refseq.get('rna'), list) else refseq.get('rna'))
 
     box.setField('Hs_GenLoc_db', meta.get('genome_assembly').get('human'))
-    box.setField('Hs_GenLoc_chr', root.get('genomic_pos').get('chr'))
-    box.setField('Hs_GenLoc_start', root.get('genomic_pos').get('start'))
-    box.setField('Hs_GenLoc_end', root.get('genomic_pos').get('end'))
+
+    genomic_pos = root.get('genomic_pos')[0] if isinstance(root.get('genomic_pos'), list) else root.get('genomic_pos')
+    box.setField('Hs_GenLoc_chr', genomic_pos.get('chr'))
+    box.setField('Hs_GenLoc_start', genomic_pos.get('start'))
+    box.setField('Hs_GenLoc_end', genomic_pos.get('end'))
     box.setField('path', 'PBB/{}'.format(entrez))
 
     go = root.get('go', None)
@@ -126,16 +131,20 @@ def generate_protein_box_for_entrez(entrez):
         mouse_uniprot = findReviewedUniprotEntry( homolog.get('uniprot'), homolog.get('entrezgene'))
 
         box.setField('Mm_EntrezGene', homolog.get('entrezgene'))
-        box.setField('Mm_Ensembl', homolog.get('ensembl').get('gene'))
+        ensembl = homolog.get('ensembl')
+        box.setField('Mm_Ensembl', ensembl[0].get('gene') if isinstance(ensembl, list) else ensembl.get('gene') )
 
         refseq = homolog.get('refseq')
         box.setField('Mm_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein') )
         box.setField('Mm_RefseqmRNA',  refseq.get('rna')[0] if isinstance(refseq.get('rna'), list) else refseq.get('rna') )
 
         box.setField('Mm_GenLoc_db', meta.get('genome_assembly').get('mouse'))
-        box.setField('Mm_GenLoc_chr', homolog.get('genomic_pos').get('chr'))
-        box.setField('Mm_GenLoc_start', homolog.get('genomic_pos').get('start'))
-        box.setField('Mm_GenLoc_end', homolog.get('genomic_pos').get('end'))
+
+        genomic_pos = homolog.get('genomic_pos')[0] if isinstance(homolog.get('genomic_pos'), list) else homolog.get('genomic_pos')
+        box.setField('Mm_GenLoc_chr', genomic_pos.get('chr'))
+        box.setField('Mm_GenLoc_start', genomic_pos.get('start'))
+        box.setField('Mm_GenLoc_end', genomic_pos.get('end'))
+
         box.setField('Mm_Uniprot', mouse_uniprot)
 
     return box
