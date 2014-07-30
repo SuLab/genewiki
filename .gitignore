@@ -38,3 +38,4 @@ docs/_build/
 /old-assets/gene2pubmed.gz
 .ipynb_checkpoints
 gene-wiki.ipynb
+genewiki/settings.py
