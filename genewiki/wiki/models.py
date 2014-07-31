@@ -5,8 +5,11 @@ from genewiki.wiki.managers import BotManager, ArticleManager
 from genewiki.wiki.textutils import generate_protein_box_for_existing_article
 from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
 
-import mwclient, re
+from raven.contrib.django.raven_compat.models import client
+
+import mwclient, re, logging
 from mwclient.errors import *
+logger = logging.getLogger(__name__)
 
 
 class Bot(models.Model):
@@ -28,6 +31,7 @@ class Bot(models.Model):
       connection = mwclient.Site(settings.BASE_SITE)
       connection.login(self.username, self.password)
       return connection
+
 
     def previous_actions(self, limit = 500):
         '''
@@ -127,10 +131,13 @@ class Article(models.Model):
         # Run the comparision between the current box online
         # and the dictionary just generated from mygene
         print self.url_for_article()
-        updated, summary, updatedfields = current_box.updateWith( mgibox )
+        try:
+            updated, summary, updatedfields = current_box.updateWith( mgibox )
+        except Exception as err:
+            client.captureException()
+
         res = self.write(updated, summary)
-        print res
-        print ' - - - - - '
+        logger.info('Page Updated', exc_info=True, extra={'updated': updated, 'summary': summary, 'updatedfields': updatedfields});
 
 
     def write(self, proteinbox, summary):
@@ -146,6 +153,7 @@ class Article(models.Model):
         page = self.get_page()
 
         if not self.bots_allowed():
+            logger.warn('Bots Blocked', exc_info=True, extra={'page': page, 'bot': self});
             return (None, Exception('Bot edits prohibited.'))
 
         try:
@@ -156,6 +164,7 @@ class Article(models.Model):
 
             return (result, None)
         except MwClientError as e:
+            client.captureException()
             error = e
         return (None, error)
 
