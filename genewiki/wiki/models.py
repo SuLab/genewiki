@@ -51,6 +51,8 @@ class Bot(models.Model):
                 article, created = Article.objects.get_or_create(title = page.name, article_type = Article.INFOBOX)
                 article.text = page.edit()
                 article.save()
+                if created:
+                    logger.info('Article Added', exc_info=True, extra={'article': article, 'title': page.name});
 
 
     def __unicode__(self):
