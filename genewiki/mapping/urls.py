@@ -10,4 +10,5 @@ router.register(r'', RelationshipViewSet)
 urlpatterns = patterns('genewiki.mapping.views',
     # REST Framework
     url(r'', include(router.urls)),
+    url(r'^wiki/(?P<entrez_id>\d+)/$', r'wiki_mapping'),
 )

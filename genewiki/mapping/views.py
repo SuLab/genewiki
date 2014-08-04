@@ -1,7 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from rest_framework import viewsets
-from genewiki.mapping.models import Relationship
+from genewiki.mapping.models import Relationship, Lookup
 from genewiki.mapping.serializers import RelationshipSerializer
 
 
@@ -14,30 +14,12 @@ class RelationshipViewSet(viewsets.ModelViewSet):
 
 
 
+def wiki_mapping(request, entrez_id):
+    relationship = Relationship.objects.filter(entrez_id = entrez_id).first()
+    if relationship:
+        Lookup.objects.create(relationship = relationship)
+        return redirect(u'http://en.wikipedia.org/wiki/{0}'.format(relationship.title))
+    else:
+        return redirect(u'http://plugins.biogps.org/cgi-bin/gwgenerator.cgi?id={0}'.format(entrez_id))
 
-# get '/map/?:id?' do |id|
-#   id = id || params[:id]
-#   if id.nil?
-#     content_type :json
-#     Mapping.all().to_json(:only => [:entrez_id, :title_url, :updated])
-#   elsif (id =~ /\D/).nil?
-#     map = Mapping.first(:entrez_id => id) rescue nil
-#       map.update(:hits => map[:hits]+1) if !map.nil?
-#     map[:title_url].to_s rescue nil
-#   else
-#     map = Mapping.first(:title_url => id) rescue nil
-#       map.update(:hits => map[:hits]+1) if !map.nil?
-#     map[:entrez_id].to_s rescue nil
-#   end
-# end
-# 
-# post '/map' do
-#   if !params[:entrez_id].nil? && !params[:title_url].nil?
-#     (Mapping.first_or_create(:entrez_id => params[:entrez_id]))
-#     .update(
-#       :entrez_id => params[:entrez_id],
-#       :title_url => params[:title_url],
-#       :updated => DateTime.now)
-#   end
-# end
-# 
+
