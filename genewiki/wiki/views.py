@@ -26,3 +26,8 @@ def article_update(request, article_id):
     article = get_object_or_404(Article, pk = article_id)
     article.update()
     return HttpResponse(200)
+
+def article_create(request, entrez_id):
+    print entrez_id
+    return render_to_response('wiki/create.jade', {}, context_instance=RequestContext(request))
+

@@ -1,0 +1,75 @@
+extends base
+
+- load humanize
+
+block content
+    script(src='gwgenerator/assets/gwgenerator.js', type='text/javascript')
+    .container
+      .row.well
+        .col-md-6
+          .row
+            .col-md-12
+              h2
+                | Template: PBB/<span class='entrez'>{entrez}</span>
+              hr
+              h3
+                | Status: <span class='{temp_status}'>{temp_status_str}</span>
+          .row
+            .col-md-12
+              button.show
+                Show Template Code
+
+              button.temp_action
+                | Some temp_action
+
+              button.view.temp_view
+                | view template
+
+          .row
+            textarea(rows='15', cols='50', readonly='readonly').code
+              {template}
+
+
+      .row.well
+        .col-md-6
+          .row
+            .col-md-12
+              h2
+                | Article: <span class='title'>{title}</span>
+              hr
+
+          div.warning.warning_stat
+            p
+              | One of the titles below exists on Wikipedia; manual editing required.
+          .row
+            .col-md-12
+              h3
+                | Possible titles:
+
+              ul
+                li
+                  | Gene symbol:     <span class='cl sym'>{gene_sym}</span>       <span class='{sym_status}'>{sym_status}</span> <br />
+                li
+                  | Gene name:       <span class='cl name'>{gene_name}</span>      <span class='{name_status}'>{name_status}</span> <br />
+                li
+                  | Alternate title: <span class='cl sym_alt'>{gene_sym_2}</span> <span class='{sym2_status}'>{sym2_status}</span>
+
+              h3.title_select
+                | Select title from above choices:</h3>
+
+              form
+                input(type='text', size='60', value='{suggestion}', name='title', readonly='readonly')
+                input(type='hidden', value='{entrez}', name='id')
+
+
+              button.show
+                | show stub code
+
+              button.stub_action
+                | {stub_action} article '<span id='stub_action_title'>{action_title}</span>'
+
+              button.view.stub_view
+                | view article
+              br
+              textarea(rows='15', cols='50', readonly='readonly').code
+                {stub}
