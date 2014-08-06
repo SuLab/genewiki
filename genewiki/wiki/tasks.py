@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from django.conf import settings
+from raven.contrib.django.raven_compat.models import client
 
 from genewiki.wiki.models import Bot, Article
 
@@ -21,6 +22,9 @@ def update_all_infoboxes():
 @task()
 def update_articles(update_list):
     for pk in update_list:
-        article = Article.objects.get(pk = pk)
-        article.update()
+        try:
+            article = Article.objects.get(pk = pk)
+            article.update()
+        except Exception as err:
+            client.captureException()
 
