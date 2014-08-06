@@ -18,3 +18,9 @@ def update_all_infoboxes():
     for infobox in Article.objects.all(article_type = Article.INFOBOX):
         infobox.update()
 
+@task()
+def update_articles(update_list):
+    for pk in update_list:
+        article = Article.objects.get(pk = pk)
+        article.update()
+

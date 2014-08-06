@@ -6,6 +6,29 @@ block content
 
   .container.head-space-xl
     .row
+      .col-md-3.col-md-offset-2
+        .list-group
+          li.list-group-item
+            form(role='form', method='POST', action='/wiki/update/').form-inline.ajax-post
+              {% csrf_token %}
+              .input-group
+                input(type='number', name='update_count', placeholder='Update').form-control
+                .input-group-btn
+                  button(type='submit').btn.btn-primary
+                    | Update
+
+      .col-md-3
+        .list-group
+          li.list-group-item
+            | <strong>Last hour:</strong> {{ updated.hour }}
+          li.list-group-item
+            | <strong>Last day:</strong> {{ updated.day }}
+          li.list-group-item
+            | <strong>Last week:</strong> {{ updated.week }}
+          li.list-group-item
+            | <strong>Last month:</strong> {{ updated.month }}
+
+    .row
       .col-md-8.col-md-offset-2
 
           table.table.table-striped.table-hover
