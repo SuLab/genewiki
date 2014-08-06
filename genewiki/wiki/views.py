@@ -39,7 +39,7 @@ def update(request):
     limit = request.POST.get('update_count', None)
     if limit:
         update_list = Article.objects.order_by('updated').values_list('pk', flat=True).all()[:int(limit)]
-        update_articles(update_list)
+        update_articles.apply_async(args = [update_list,])
     else:
         pass
 
