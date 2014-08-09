@@ -1,15 +1,15 @@
 from django.template import RequestContext
-from django.shortcuts import get_object_or_404, render_to_response, redirect
+from django.shortcuts import get_object_or_404, render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_http_methods
-from django.shortcuts import redirect
 from django.http import HttpResponse
-from django.conf import settings
 
 from genewiki.mapping.models import Relationship
 
 from genewiki.wiki.models import Article
 from genewiki.wiki.tasks import update_articles
+
+from genewiki.wiki.textutils import create
 
 from datetime import datetime, timedelta
 
@@ -26,12 +26,12 @@ def home(request, page_num=1):
         articles = article_list_paginator.page(paginator.num_pages)
 
     updated = {
-        'hour': Article.objects.filter(updated__gt = datetime.now() - timedelta(hours = 1)).count(),
-        'day': Article.objects.filter(updated__gt = datetime.now() - timedelta(days = 1)).count(),
-        'week': Article.objects.filter(updated__gt = datetime.now() - timedelta(weeks = 1)).count(),
-        'month': Article.objects.filter(updated__gt = datetime.now() - timedelta(weeks = 4)).count(),
+        'hour': Article.objects.filter(updated__gt=datetime.now() - timedelta(hours=1)).count(),
+        'day': Article.objects.filter(updated__gt=datetime.now() - timedelta(days=1)).count(),
+        'week': Article.objects.filter(updated__gt=datetime.now() - timedelta(weeks=1)).count(),
+        'month': Article.objects.filter(updated__gt=datetime.now() - timedelta(weeks=4)).count(),
     }
-    return render_to_response('wiki/index.jade', {'articles' : articles, 'updated' : updated}, context_instance=RequestContext(request))
+    return render_to_response('wiki/index.jade', {'articles': articles, 'updated': updated}, context_instance=RequestContext(request))
 
 
 @require_http_methods(['POST'])
@@ -39,7 +39,7 @@ def update(request):
     limit = request.POST.get('update_count', None)
     if limit:
         update_list = Article.objects.order_by('updated').values_list('pk', flat=True).all()[:int(limit)]
-        update_articles.apply_async(args = [update_list,])
+        update_articles.apply_async(args=[update_list, ])
     else:
         pass
 
@@ -48,7 +48,7 @@ def update(request):
 
 @require_http_methods(['POST'])
 def article_update(request, article_id):
-    article = get_object_or_404(Article, pk = article_id)
+    article = get_object_or_404(Article, pk=article_id)
     article.update()
     return HttpResponse(200)
 
@@ -59,7 +59,7 @@ def article_create(request, entrez_id):
     validuploadopts = ['templatename', 'name', 'symbol', 'altsym']
 
     # Attempt to create all the wiki pages
-    results = create(entrez, True)
+    results = create(entrez_id, True)
     if results:
         titles = results['titles']
         checked = results['checked']
@@ -68,10 +68,9 @@ def article_create(request, entrez_id):
 
             title = titles[uploadopt] if not checked[titles[uploadopt]] else None
             if title:
-                Relationship.objects.create(entrez_id = entrez, title_url = title)
+                Relationship.objects.create(entrez_id=entrez_id, title_url=title)
 
                 content = results['template'] if title.startswith('Template:PBB/') else results['stub']
-                genewiki = GeneWiki()
                 retcode = genewiki.upload(title, content)
 
                 # create corresponding talk page with appropriate project banners
@@ -100,10 +99,9 @@ def article_create(request, entrez_id):
             pageAtSymExists = checked[titles['symbol']]
             pageAtAltSymExists = checked[titles['altsym']]
             titleExists = (pageAtNameExists or pageAtSymExists or pageAtAltSymExists)
-            workingTitle = "{} ({})".format(titles['symbol'], titles['name'])
             existingTitle = titles['altsym'] if pageAtAltSymExists else titles['name'] if pageAtNameExists else titles['symbol'] if pageAtSymExists else titles['altsym']
             vals = {
-                'entrez': entrez,
+                'entrez': entrez_id,
                 'temp_status': 'exists' if templateExists else 'missing',
                 'temp_status_str': 'exists' if templateExists else 'does not exist',
                 'temp_action': 'edit' if templateExists else 'create',
@@ -124,11 +122,9 @@ def article_create(request, entrez_id):
                 'stub_act_status': '',
                 'action_title': titles['name'],
                 'stub_view': 'visible' if titleExists else 'hidden',
-                'stub': results['stub'] }
-            print body.format(**vals)
+                'stub': results['stub']}
             return render_to_response('wiki/create.jade', vals, context_instance=RequestContext(request))
 
     else:
         return HttpResponse('Invalid or missing entrez id.')
-
 

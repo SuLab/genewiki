@@ -39,3 +39,4 @@ docs/_build/
 .ipynb_checkpoints
 gene-wiki.ipynb
 genewiki/settings.py
+gene2pubmed.gz

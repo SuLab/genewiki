@@ -1,5 +1,110 @@
 from django.conf import settings
-import re, copy
+
+from genewiki.bio.g2p_redis import get_pmids, init_redis
+
+import re, copy, json, datetime, urllib
+
+
+def create_stub(gene_id):
+    '''
+        Contains templates and functions for generating article stubs for the Gene Wiki
+        Project on Wikipedia.
+    '''
+    try:
+        from genewiki.bio.mygeneinfo import get_response
+        root, meta, homolog, entrez, uniprot = get_response(gene_id)
+    except Exception, e:
+        print e
+        return None
+
+    summary = root.get('summary', '')
+    footer = ''
+    if summary != '':
+        summary = '==Function==\n\n' + summary
+        footer = '{{NLM content}}'
+
+    genomic_pos = root.get('genomic_pos')[0] if isinstance(root.get('genomic_pos'), list) else root.get('genomic_pos')
+    values = {
+        'id': root.get('entrezgene'),
+        'name': root.get('name')[0].capitalize() + root.get('name')[1:],
+        'symbol': root.get('symbol'),
+        'summary': summary,
+        'chromosome': genomic_pos.get('chr'),
+        'currentdate': datetime.datetime.now().isoformat('T') + '-08:00',  # adjust if not in CA
+        'citations': '',
+        'footer': footer
+    }
+    values['entrezcite'] = settings.ENTREZ_CITE.format(**values)
+
+    # build out the citations
+    pmids = get_pmids(gene_id, init_redis(), 100)
+    limit = 9 if len(pmids) > 9 else len(pmids)
+    citations = ''
+    for pmid in pmids[:limit]:
+        citations = '{}*{{{{Cite pmid|{} }}}}\n'.format(citations, pmid)
+    values['citations'] = citations
+
+    stub = settings.STUB_SKELETON.format(**values)
+    return stub
+
+
+def create(entrez, force=False):
+    results = {'titles': {},
+               'checked': {},
+               'template': '',
+               'stub': ''}
+
+    try:
+        from genewiki.bio.mygeneinfo import get_response
+        root, meta, homolog, entrez, uniprot = get_response(entrez)
+    except ValueError:
+        # invalid entrez
+        return None
+
+    t = {}
+    t['name'] = root['name'].capitalize()
+    t['symbol'] = root['symbol']
+    t['altsym'] = t['symbol'] + ' (gene)'
+    t['templatename'] = 'Template:PBB/{0}'.format(entrez)
+
+    titles = []
+    titles = [t[x] for x in t]
+    checked = check(titles)
+
+    if checked[t['templatename']] == 'missing' or force:
+        from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
+        results['template'] = str(generate_protein_box_for_entrez(entrez))
+
+    if not (checked[t['name']] or checked[t['symbol']]
+            or checked[t['altsym']]) or force:
+
+        results['stub'] = create_stub(entrez)
+
+    results['titles'] = t
+    results['checked'] = checked
+    return results
+
+
+def check(titles):
+    '''
+        Tries, as fast as possible, to check the presence of titles passed to it as
+        the first command-line argument.
+    '''
+    titles = [titles] if isinstance(titles, str) else titles
+    qtitles = [urllib.quote(x) for x in titles]
+    querystr = '|'.join(qtitles)
+    api = 'http://en.wikipedia.org/w/api.php?action=query&titles={title}&prop=info&redirects&format=json'
+    j = json.loads(urllib.urlopen(api.format(title=querystr)).read())
+    results = {}
+    pages = j['query']['pages']
+    if 'redirects' in j['query']:
+        redirects = j['query']['redirects']
+        for r in redirects:
+            results[r['from']] = r['to']
+    for pid in pages:
+        title = pages[pid]['title']
+        results[title] = title if int(pid) > 0 else ''
+    return results
 
 
 class ProteinBox(object):
@@ -28,48 +133,48 @@ class ProteinBox(object):
     # multiple values, the regex should match each value. For field values in the form of a
     # dict, the regex should match the keys.
     fields = {
-        'Name':         default,
-        'image':        default,
+        'Name': default,
+        'image': default,
         'image_source': default,
-        'PDB':          r'^\w{4}$',
-        'HGNCid':       generic,
-        'MGIid':        generic,
-        'Symbol':       generic,
-        'AltSymbols':   default,
-        'IUPHAR':       default,
-        'ChEMBL':       default,
-        'OMIM':         r'^\d{6}$',
-        # 'ECnumber':     r'^(\d+\.?){4}$',
-        'ECnumber':     default,
-        'Homologene':   default,    # could not find source for this
-        'GeneAtlas_image1':     default,
-        'GeneAtlas_image2':     default,
-        'GeneAtlas_image3':     default,
+        'PDB': r'^\w{4}$',
+        'HGNCid': generic,
+        'MGIid': generic,
+        'Symbol': generic,
+        'AltSymbols': default,
+        'IUPHAR': default,
+        'ChEMBL': default,
+        'OMIM': r'^\d{6}$',
+        # 'ECnumber': r'^(\d+\.?){4}$',
+        'ECnumber': default,
+        'Homologene': default,    # could not find source for this
+        'GeneAtlas_image1': default,
+        'GeneAtlas_image2': default,
+        'GeneAtlas_image3': default,
         'Protein_domain_image': default,
-        'Function':         (r'^GO:\d+$', default),
-        'Component':        (r'^GO:\d+$', default),
-        'Process':          (r'^GO:\d+$', default),
-        'Hs_EntrezGene':    digits,
-        'Hs_Ensembl':       generic,
-        'Hs_RefseqmRNA':    r'NM_\d+(\.\d+)?$',
+        'Function': (r'^GO:\d+$', default),
+        'Component': (r'^GO:\d+$', default),
+        'Process': (r'^GO:\d+$', default),
+        'Hs_EntrezGene': digits,
+        'Hs_Ensembl': generic,
+        'Hs_RefseqmRNA': r'NM_\d+(\.\d+)?$',
         'Hs_RefseqProtein': r'NP_\d+(\.\d+)?$',
-        'Hs_GenLoc_db':     r'(?i)hg\d+$',
-        'Hs_GenLoc_chr':    default,
-        'Hs_GenLoc_start':  digits,
-        'Hs_GenLoc_end':    digits,
-        'Hs_Uniprot':       r'^(?i)[a-z0-9]{6}$',
-        'Mm_EntrezGene':    digits,
-        'Mm_Ensembl':       generic,
-        'Mm_RefseqmRNA':    r'NM_\d+(\.\d+)?$',
+        'Hs_GenLoc_db': r'(?i)hg\d+$',
+        'Hs_GenLoc_chr': default,
+        'Hs_GenLoc_start': digits,
+        'Hs_GenLoc_end': digits,
+        'Hs_Uniprot': r'^(?i)[a-z0-9]{6}$',
+        'Mm_EntrezGene': digits,
+        'Mm_Ensembl': generic,
+        'Mm_RefseqmRNA': r'NM_\d+(\.\d+)?$',
         'Mm_RefseqProtein': r'NP_\d+(\.\d+)?$',
-        'Mm_GenLoc_db':     r'(?i)mm\d+$',
-        'Mm_GenLoc_chr':    default,
-        'Mm_GenLoc_start':  digits,
-        'Mm_GenLoc_end':    digits,
-        'Mm_Uniprot':       r'^(?i)[a-z0-9]{6}$',
-        'path':             r'^PBB\/\d+$',
-        'before_text':      default,
-        'after_text':       default}
+        'Mm_GenLoc_db': r'(?i)mm\d+$',
+        'Mm_GenLoc_chr': default,
+        'Mm_GenLoc_start': digits,
+        'Mm_GenLoc_end': digits,
+        'Mm_Uniprot': r'^(?i)[a-z0-9]{6}$',
+        'path': r'^PBB\/\d+$',
+        'before_text': default,
+        'after_text': default}
 
     # Fields that can hold multiple values
     multivalue = ['PDB',
@@ -87,7 +192,7 @@ class ProteinBox(object):
         if field in self.multivalue:
             for entry in value:
                 if field in ['Function', 'Component', 'Process']:
-                    if not re.match( self.fields[field][0], entry ):
+                    if not re.match(self.fields[field][0], entry):
                         return False
                 elif not re.match(self.fields[field], entry):
                     return False
@@ -115,7 +220,6 @@ class ProteinBox(object):
         else:
             return obj
 
-
     def setField(self, field_name, field_value):
         '''
           Sets a field in the fieldsdict using the fields as a validity check.
@@ -133,10 +237,9 @@ class ProteinBox(object):
         field_value = self.coerce_unicode(field_value)
 
         if field_name in self.fields:
-            if not field_name in self.multivalue and not self.validate(field_name, field_value):
+            if field_name not in self.multivalue and not self.validate(field_name, field_value):
                 print 'validation failed: ', field_name, field_value
                 return fieldsdict
-
 
             if field_name in self.multivalue:
                 if isinstance(field_value, list):
@@ -153,7 +256,6 @@ class ProteinBox(object):
 
         self.fieldsdict = fieldsdict
         return fieldsdict
-
 
     def updateWith(self, targetbox):
         '''
@@ -199,21 +301,16 @@ class ProteinBox(object):
 
         return new, summary, updatedFields
 
-
     def linkImage(self):
         '''
           If a pdb structure and hugo symbol are available, but no image field set,
           we can attempt to find or render an image for the ProteinBox.
         '''
-        if (self.fieldsdict['PDB'] and self.fieldsdict['Symbol']
-            and not self.fieldsdict['image']):
+        if (self.fieldsdict['PDB'] and self.fieldsdict['Symbol'] and not self.fieldsdict['image']):
             from genewiki.bio.images import get_image
-            pdb = self.fieldsdict['PDB'][0]
-            sym = self.fieldsdict['Symbol']
             image, caption = get_image(self, use_experimental=True)
             self.setField('image', image)
             self.setField('image_source', caption)
-
 
     def wikitext(self):
         '''
@@ -312,6 +409,7 @@ class ProteinBox(object):
   Utility methods for parsing and extracting infobox templates.
 '''
 
+
 def contains_template(source, templatename):
     '''
       Returns the index of the start of the template if found, or None elsewise
@@ -335,22 +433,23 @@ def isolate_template(source, templatename):
     level = 0
     subsource = source[start-2:]
     for i, char in enumerate(subsource):
-        prev = subsource[i-1] if i > 0 else ''
+        prev = subsource[i - 1] if i > 0 else ''
         if char == '{' and prev == '{':
             level = level + 1
             if opened is -1:
-                opened = i+1
+                opened = i + 1
         elif char == '}' and prev == '}':
             level = level - 1
             if closed < i:
-                closed = i+1
+                closed = i + 1
 
         if level is 0 and opened is not -1:
             break
 
     if opened is not -1 and closed is not -1:
-        return opened+start-2, closed+start-2, subsource[opened:closed]
-    else: return None
+        return opened + start - 2, closed + start - 2, subsource[opened:closed]
+    else:
+        return None
 
 
 def postprocess(fieldvalues):
@@ -361,8 +460,8 @@ def postprocess(fieldvalues):
       during updates or comparisons. This is not meant to be used independently.
     '''
     pbox = ProteinBox()
-    #print 'DEBUG: '+str(fieldvalues.keys())
-    #for val in fieldvalues: print 'DEBUG: {}:{}'.format(val, fieldvalues[val])
+    # print 'DEBUG: '+str(fieldvalues.keys())
+    # for val in fieldvalues: print 'DEBUG: {}:{}'.format(val, fieldvalues[val])
     for field in pbox.fields:
         # Handle splitting up multiple value fields
         if field in pbox.multivalue:
@@ -388,10 +487,10 @@ def postprocess(fieldvalues):
 
             elif field == 'ECnumber' and fieldvalues[field]:
                 ecs = fieldvalues[field].split(', ')
-                ecs = filter(lambda x:x, ecs)
+                ecs = filter(lambda x: x, ecs)
                 pbox.setField(field, ecs)
 
-            elif fieldvalues[field]: # One of the GO fields
+            elif fieldvalues[field]:  # One of the GO fields
                 # this regex isolates the GO term and the description into group 1 and 2
                 # we do this to avoid any junk or invalid markup in these fields
                 regex = r'\{\{GNF_GO\s?\|\s?id=(GO:[\d]*)\s?\|\s?text\s?=\s?([^\}]*)\}\}'
@@ -399,7 +498,7 @@ def postprocess(fieldvalues):
                 print '/ / / / / / / / / /'
                 print field, fieldvalues[field]
                 for match in re.finditer(regex, fieldvalues[field]):
-                    goterms.append({match.group(1):match.group(2)})
+                    goterms.append({match.group(1): match.group(2)})
                 pbox.setField(field, goterms)
 
         # Import the rest of the fields into the new ProteinBox
@@ -422,15 +521,16 @@ def strip_references(wikitext):
 
     source = copy.copy(wikitext)
     # First we ensure that UNIQ really is unique by appending characters
-    UNIQ           = 'x7fUNIQ'
+    UNIQ = 'x7fUNIQ'
     while UNIQ in source:
-        UNIQ       = UNIQ+'f'
+        UNIQ = UNIQ + 'f'
+
     # Then we do the replacements
-    reftags        = []
-    refcount       = 0
+    reftags = []
+    refcount = 0
     for match in re.finditer(r'<ref\b[^>]*>(.*?)</ref>', source):
         reftags.append(match.group())
-        source     = source.replace(match.group(), UNIQ+str(refcount))
+        source = source.replace(match.group(), UNIQ + str(refcount))
         refcount += 1
 
     # Finally, return the stripped wikitext, the list of references, and the
@@ -452,8 +552,8 @@ def restore_references(wikitext, references, salt):
 
     restored = wikitext
     while salt in restored:
-        ref_id = int(restored[restored.index(salt)+len(salt)])
-        restored = restored.replace(salt+str(ref_id), references[ref_id])
+        ref_id = int(restored[restored.index(salt) + len(salt)])
+        restored = restored.replace(salt + str(ref_id), references[ref_id])
 
     return restored
 
@@ -471,7 +571,7 @@ def generate_protein_box_for_existing_article(page_source):
       if the source does not contain a valid template (ValueError).
     '''
 
-    ## PREPROCESSING ##
+    # PREPROCESSING
 
     # Temporary storage for all the field:value pairs we find for later
     fieldvalues = {}
@@ -479,10 +579,10 @@ def generate_protein_box_for_existing_article(page_source):
     # Throws a ValueError if source does not contain template, extracts the
     # template content, and stores the before and after content
     start, end, source = isolate_template(page_source, settings.TEMPLATE_NAME)
-    before             = page_source[:start-2]
-    after              = page_source[end:]
+    before = page_source[:start - 2]
+    after = page_source[end:]
     fieldvalues['before_text'] = before
-    fieldvalues['after_text']  = after
+    fieldvalues['after_text'] = after
 
     # Remove all ref tags, replacing them with an unique salt + id string and
     # storing their contents in a list.
@@ -494,18 +594,15 @@ def generate_protein_box_for_existing_article(page_source):
     # Finally, we remove any leading and trailing newlines and curly braces
     source = source.strip('\n').strip('{}')
 
-    ## MAIN LOOP ##
-
     fNameStart = 0
-    fNameEnd   = 0
-    fValStart  = 0
-    fValEnd    = 0
+    fNameEnd = 0
+    fValStart = 0
+    fValEnd = 0
 
-    nameParsed  = False;
-    valueParsed = False;
-    inBrackets  = False;
-    inTag       = False;
-    inField     = False;
+    nameParsed = False
+    valueParsed = False
+    inBrackets = False
+    inField = False
 
     level = 0
 
@@ -519,41 +616,40 @@ def generate_protein_box_for_existing_article(page_source):
     i = 0
     while i < len(source):
         ch = source[i]
-        nx = source[i+1] if i < len(source)-1 else None
+        nx = source[i + 1] if i < len(source) - 1 else None
 
-        if ch == '{' and nx =='{' or ch == '[' and nx == '[' or ch == '<':
+        if ch == '{' and nx == '{' or ch == '[' and nx == '[' or ch == '<':
             level += 1
             inBrackets = True
             i += 1
         elif ch == '}' and nx == '}' or ch == ']' and nx == ']' or ch == '>':
-            level = level-1
+            level = level - 1
             if level is 0:
-                inBrackets  = False
+                inBrackets = False
             i += 1
         elif ch == '|' and not inBrackets:
             if not inField:
-                inField     = True
-                fNameStart  = i+1
+                inField = True
+                fNameStart = i + 1
             else:
-                inField     = False
-                fValEnd     = i
+                inField = False
+                fValEnd = i
                 valueParsed = True
-                i           = i - 1
+                i = i - 1
         elif ch == '=' and not inBrackets and inField and not nameParsed:
-            fNameEnd        = i;
-            fValStart       = i+1
-            nameParsed      = True
+            fNameEnd = i
+            fValStart = i + 1
+            nameParsed = True
 
-        if i == len(source)-1:
-            fValEnd = i+1;
-            valueParsed = True;
-
+        if i == len(source) - 1:
+            fValEnd = i + 1
+            valueParsed = True
 
         if nameParsed and valueParsed:
             try:
-                name  = source[fNameStart:fNameEnd].strip()
+                name = source[fNameStart:fNameEnd].strip()
                 if (fValStart > fValEnd):
-                    raise ValueError();
+                    raise ValueError()
                 value = source[fValStart:fValEnd].strip()
 
                 # Replace the reftags we removed in preprocessing step 2
@@ -566,7 +662,7 @@ def generate_protein_box_for_existing_article(page_source):
                     value = unicode(value, 'utf-8')
                 fieldvalues[name] = value
 
-                nameParsed  = False
+                nameParsed = False
                 valueParsed = False
             except ValueError:
                 raise ParseError('Malformed wikitext- parsing failed.')
@@ -579,6 +675,7 @@ def generate_protein_box_for_existing_article(page_source):
 
     # splits up multiple value fields properly
     return postprocess(fieldvalues)
+
 
 class ParseError(Exception):
     '''
