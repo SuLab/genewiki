@@ -431,7 +431,7 @@ def isolate_template(source, templatename):
         raise ValueError('The source does not appear to contain the template.')
     opened = closed = -1
     level = 0
-    subsource = source[start-2:]
+    subsource = source[start - 2:]
     for i, char in enumerate(subsource):
         prev = subsource[i - 1] if i > 0 else ''
         if char == '{' and prev == '{':

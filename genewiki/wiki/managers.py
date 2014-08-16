@@ -1,8 +1,5 @@
 from django.db import models
 
-from genewiki.wiki.models import Bot, Article
-
-
 class BotManager(models.Manager):
 
     def get_random_bot(self):
@@ -15,21 +12,12 @@ class BotManager(models.Manager):
 
 class ArticleManager(models.Manager):
 
-    def get_infobox(self, entrez):
+    def get_infobox_for_entrez(self, entrez):
         '''
             Returns the current infobox for given entrez, or None if it does not
             exist.
         '''
-        title = 'Template:PBB/'.format(entrez)
-
-        res = self.filter(title=title).first()
-        if res:
-            return res
-        else:
-            bot = Bot.objects.get_random_bot()
-            conn = bot.connection()
-            for page in conn.Pages[title]:
-                article, created = Article.objects.get_or_create(title=page.page_title, article_type='template', bot=self)
-                article.save()
-                return article
+        Article = self.model
+        title = 'Template:PBB/{0}'.format(entrez)
+        return self.filter(title=title).first()
 

@@ -23,7 +23,7 @@ def download_g2p():
     return 'gene2pubmed.gz'
 
 
-def init_redis(host='localhost', port=6379, db=1):
+def init_redis(host='127.0.0.1', port=6379, db=1):
     '''
         Returns a connection to the redis server with the specified options.
         Defaults localhost:6379, db 1.

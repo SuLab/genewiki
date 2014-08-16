@@ -23,7 +23,7 @@ def home(request, page_num=1):
     except PageNotAnInteger:
         articles = article_list_paginator.page(1)
     except EmptyPage:
-        articles = article_list_paginator.page(paginator.num_pages)
+        articles = article_list_paginator.page(article_list_paginator.num_pages)
 
     updated = {
         'hour': Article.objects.filter(updated__gt=datetime.now() - timedelta(hours=1)).count(),
@@ -55,76 +55,51 @@ def article_update(request, article_id):
 
 @require_http_methods(['GET', 'POST'])
 def article_create(request, entrez_id):
-    uploadopt = request.POST.get('upload', None)
-    validuploadopts = ['templatename', 'name', 'symbol', 'altsym']
-
-    # Attempt to create all the wiki pages
     results = create(entrez_id, True)
-    if results:
-        titles = results['titles']
-        checked = results['checked']
 
-        if request.method == 'POST' and uploadopt in validuploadopts:
+    if request.method == 'GET' and results:
+        titles = results.get('titles')
+        return render_to_response('wiki/create.jade', {
+            'templateExists': titles['templatename'],
+            'titleExists': (titles.get('name') or titles.get('symbol') or titles.get('altsym')),
+            'existingTitle': titles['altsym'] if titles.get('altsym') else titles['name'] if titles.get('name') else titles['symbol'] if titles.get('symbol') else titles['altsym'],
+            'results': results,
+            'titles': titles,
+            'entrez': entrez_id,}, context_instance=RequestContext(request))
 
+
+    if request.method == 'POST':
+        uploadopt = request.POST.get('upload', None)
+        validuploadopts = ['templatename', 'name', 'symbol', 'altsym']
+        titles = results.get('titles')
+        checked = results.get('checked')
+
+        if uploadopt in validuploadopts:
             title = titles[uploadopt] if not checked[titles[uploadopt]] else None
             if title:
                 Relationship.objects.create(entrez_id=entrez_id, title_url=title)
-
                 content = results['template'] if title.startswith('Template:PBB/') else results['stub']
                 retcode = genewiki.upload(title, content)
-
                 # create corresponding talk page with appropriate project banners
                 if not title.startswith('Template:PBB/'):
                     talk_title = "Talk:" + title
                     talk_content = """{{WikiProjectBannerShell|
-    {{WikiProject Gene Wiki|class=stub|importance=low}}
-    {{Wikiproject MCB|class=stub|importance=low}}
-    }}"""
+                                      {{WikiProject Gene Wiki|class=stub|importance=low}}
+                                      {{Wikiproject MCB|class=stub|importance=low}}
+                                    }}"""
                     talk_retcode = genewiki.upload(talk_title, talk_content)
-
                 else:
                     talk_retcode = 0
-
                 # return code is 0 if both page and talk page write was successful; 1 if either failed
                 print (retcode or talk_retcode)
-
             else:
                 return HttpResponse('Article or template already exists.')
+
         elif uploadopt:
             return HttpResponse('Invalid upload option.')
-        else:
-            # Create a template
-            templateExists = checked[titles['templatename']]
-            pageAtNameExists = checked[titles['name']]
-            pageAtSymExists = checked[titles['symbol']]
-            pageAtAltSymExists = checked[titles['altsym']]
-            titleExists = (pageAtNameExists or pageAtSymExists or pageAtAltSymExists)
-            existingTitle = titles['altsym'] if pageAtAltSymExists else titles['name'] if pageAtNameExists else titles['symbol'] if pageAtSymExists else titles['altsym']
-            vals = {
-                'entrez': entrez_id,
-                'temp_status': 'exists' if templateExists else 'missing',
-                'temp_status_str': 'exists' if templateExists else 'does not exist',
-                'temp_action': 'edit' if templateExists else 'create',
-                'temp_view': 'visible' if templateExists else 'hidden',
-                'template': results['template'],
-                'title': existingTitle,
-                'warning_stat': 'visible' if titleExists else 'hidden',
-                'gene_name': titles['name'] if pageAtNameExists else titles['name'],
-                'name_status': 'exists' if pageAtNameExists else 'missing',
-                'gene_sym': titles['symbol'],
-                'sym_status': 'exists' if pageAtSymExists else 'missing',
-                'gene_sym_2': titles['altsym'],
-                'sym2_status': 'exists' if pageAtAltSymExists else 'missing',
-                'suggestion': existingTitle if existingTitle else titles['name'],
-                'title_stat_vis': 'visible' if not titleExists else 'hidden',
-                'title_status': 'exists' if titleExists else 'valid',
-                'stub_action': 'edit' if titleExists else 'create',
-                'stub_act_status': '',
-                'action_title': titles['name'],
-                'stub_view': 'visible' if titleExists else 'hidden',
-                'stub': results['stub']}
-            return render_to_response('wiki/create.jade', vals, context_instance=RequestContext(request))
 
-    else:
-        return HttpResponse('Invalid or missing entrez id.')
+
+
+    # If no conditions met
+    return HttpResponse('No good :(')
 

@@ -2,6 +2,7 @@ from django.conf import settings
 
 from genewiki.wiki.textutils import ProteinBox
 from genewiki.bio.uniprot import uniprot_acc_for_entrez_id
+from raven.contrib.django.raven_compat.models import client
 
 import re, mygene
 
@@ -84,14 +85,17 @@ def get_homolog(json_res):
 
 def get_response(entrez):
     mg = mygene.MyGeneInfo()
-    root = mg.getgene(entrez, 'name,summary,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos,go', species='human')
-    meta = mg.metadata
-    homolog = get_homolog(root)
-    homolog = mg.getgene(homolog, 'name,summary,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos,go') if homolog else None
-    entrez = root.get('entrezgene')
-    uniprot = findReviewedUniprotEntry(root.get('uniprot'), entrez)
-    return root, meta, homolog, entrez, uniprot
-
+    try:
+        root = mg.getgene(entrez, 'name,summary,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos,go', species='human')
+        meta = mg.metadata
+        homolog = get_homolog(root)
+        homolog = mg.getgene(homolog, 'name,summary,entrezgene,uniprot,pdb,HGNC,symbol,alias,MIM,ec,homologene,ensembl,refseq,genomic_pos,go') if homolog else None
+        entrez = root.get('entrezgene')
+        uniprot = findReviewedUniprotEntry(root.get('uniprot'), entrez)
+        return root, meta, homolog, entrez, uniprot
+    except Exception as e:
+        client.captureException()
+        return e
 
 def generate_protein_box_for_entrez(entrez):
     '''

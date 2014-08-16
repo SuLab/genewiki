@@ -13,21 +13,29 @@ block content
                 | Template: PBB/<span class='entrez'>{entrez}</span>
               hr
               h3
-                | Status: <span class='{temp_status}'>{temp_status_str}</span>
+                - if titles.templatename
+                  | Status: <span class='exists'>Exists</span>
+                - else
+                  | Status: <span class='missing'>Does Not Exists</span>
+
           .row
             .col-md-12
               button.show
                 Show Template Code
 
               button.temp_action
-                | Some temp_action
+                - if titles.templatename
+                  | Some Create
+                - else
+                  | Some Edit
 
-              button.view.temp_view
-                | view template
+              - if titles.templatename
+                button.view
+                  | View Template
 
           .row
             textarea(rows='15', cols='50', readonly='readonly').code
-              {template}
+              #{results.template}
 
 
       .row.well
@@ -38,9 +46,11 @@ block content
                 | Article: <span class='title'>{title}</span>
               hr
 
-          div.warning.warning_stat
-            p
-              | One of the titles below exists on Wikipedia; manual editing required.
+          - if titleExists
+            div.warning
+              p
+                | One of the titles below exists on Wikipedia; manual editing required.
+
           .row
             .col-md-12
               h3
@@ -48,28 +58,50 @@ block content
 
               ul
                 li
-                  | Gene symbol:     <span class='cl sym'>{gene_sym}</span>       <span class='{sym_status}'>{sym_status}</span> <br />
+                  - if titles.symbol
+                    | Gene symbol:     <span class='cl sym'>#{titles.symbol}</span>       <span class='exists'>Exists</span> <br />
+                  - else
+                    | Gene symbol:     <span class='cl sym'>#{titles.symbol}</span>       <span class='missing'>Missing</span> <br />
+
                 li
-                  | Gene name:       <span class='cl name'>{gene_name}</span>      <span class='{name_status}'>{name_status}</span> <br />
+                  - if titles.name
+                    | Gene name:       <span class='cl name'>#{titles.name}</span>      <span class='exists'>Exists</span> <br />
+                  - else
+                    | Gene name:       <span class='cl name'>#{titles.name}</span>      <span class='missing'>Mising</span> <br />
+
                 li
-                  | Alternate title: <span class='cl sym_alt'>{gene_sym_2}</span> <span class='{sym2_status}'>{sym2_status}</span>
+                  - if titles.altsym
+                    | Alternate title: <span class='cl sym_alt'>#{titles.altsym}</span> <span class='exists'>Exists</span>
+                  - else
+                    | Alternate title: <span class='cl sym_alt'>#{titles.altsym}</span> <span class='missing'>Missing</span>
+
 
               h3.title_select
                 | Select title from above choices:</h3>
 
               form
-                input(type='text', size='60', value='{suggestion}', name='title', readonly='readonly')
+                - if existingTitle
+                  input(type='text', size='60', value='{{existingTitle}}', name='title', readonly='readonly')
+                - else
+                  input(type='text', size='60', value='{{titles.name}}', name='title', readonly='readonly')
+
                 input(type='hidden', value='{entrez}', name='id')
 
 
               button.show
                 | show stub code
 
-              button.stub_action
-                | {stub_action} article '<span id='stub_action_title'>{action_title}</span>'
+              - if titleExists
+                button.edit
+                  | Edit article '<span id='stub_action_title'>#{titles.name}</span>'
+              - else
+                button.create
+                  | Create article '<span id='stub_action_title'>#{titles.name}</span>'
 
-              button.view.stub_view
-                | view article
+
+              - if titleExists
+                button.view
+                  | view article
               br
               textarea(rows='15', cols='50', readonly='readonly').code
-                {stub}
+                {{results.stub}}
