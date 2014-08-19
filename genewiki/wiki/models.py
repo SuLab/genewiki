@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-from genewiki.wiki.managers import ArticleManager
+from genewiki.wiki.managers import BotManager, ArticleManager
 from genewiki.wiki.textutils import generate_protein_box_for_existing_article
 from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
 
@@ -25,6 +25,8 @@ class Bot(models.Model):
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+    objects = BotManager()
 
     def connection(self):
         connection = mwclient.Site(settings.BASE_SITE)
@@ -62,15 +64,18 @@ class Article(models.Model):
     PAGE = 0
     INFOBOX = 1
     TEMPLATE = 2
+    TALK = 3
     ARTICLE_TYPE_CHOICE = (
         (PAGE, 'Standard Page'),
         (INFOBOX, 'Infobox'),
         (TEMPLATE, 'Template'),
+        (TALK, 'Talk page'),
     )
     article_type = models.IntegerField(max_length=1, choices=ARTICLE_TYPE_CHOICE, blank=True, default=PAGE)
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+    force_update = models.BooleanField(default=False)
 
     objects = ArticleManager()
 
@@ -129,7 +134,7 @@ class Article(models.Model):
         self.write(updated, summary)
         logger.info('Page Updated', exc_info=True, extra={'updated': updated, 'summary': summary, 'updatedfields': updatedfields})
 
-    def write(self, proteinbox, summary):
+    def write(self, proteinbox=None, summary=None):
         '''
           Writes the wikitext representation of the protein box to MediaWiki.
 
@@ -138,24 +143,22 @@ class Article(models.Model):
           Arguments:
           - `proteinbox`: an updated proteinbox to write
         '''
-        error = None
         page = self.get_page()
 
         if not self.bots_allowed():
             logger.warn('Bots Blocked', exc_info=True, extra={'page': page, 'bot': self})
-            return (None, Exception('Bot edits prohibited.'))
 
         try:
-            result = page.save(str(proteinbox), summary, minor=True)
+            if proteinbox:
+                result = page.save(str(proteinbox), summary, minor=True)
+                self.text = page.edit()
+            else:
+                result = page.save(self.text, summary, minor=True)
+                self.force_update = False
 
-            self.text = page.edit()
             self.save()
 
-            return (result, None)
-        except MwClientError as e:
+        except MwClientError:
             client.captureException()
-            error = e
-        return (None, error)
-
 
 

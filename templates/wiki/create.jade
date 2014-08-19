@@ -3,105 +3,126 @@ extends base
 - load humanize
 
 block content
-    script(src='gwgenerator/assets/gwgenerator.js', type='text/javascript')
-    .container
-      .row.well
-        .col-md-6
+    .container.head-space
+      #template.row
+        .col-xs-10.col-xs-offset-1.well
           .row
-            .col-md-12
-              h2
-                | Template: PBB/<span class='entrez'>{entrez}</span>
-              hr
-              h3
-                - if titles.templatename
-                  | Status: <span class='exists'>Exists</span>
-                - else
-                  | Status: <span class='missing'>Does Not Exists</span>
-
-          .row
-            .col-md-12
-              button.show
-                Show Template Code
-
-              button.temp_action
-                - if titles.templatename
-                  | Some Create
-                - else
-                  | Some Edit
-
+            .col-xs-12
               - if titles.templatename
-                button.view
-                  | View Template
-
-          .row
-            textarea(rows='15', cols='50', readonly='readonly').code
-              #{results.template}
-
-
-      .row.well
-        .col-md-6
-          .row
-            .col-md-12
-              h2
-                | Article: <span class='title'>{title}</span>
-              hr
-
-          - if titleExists
-            div.warning
-              p
-                | One of the titles below exists on Wikipedia; manual editing required.
-
-          .row
-            .col-md-12
-              h3
-                | Possible titles:
-
-              ul
-                li
-                  - if titles.symbol
-                    | Gene symbol:     <span class='cl sym'>#{titles.symbol}</span>       <span class='exists'>Exists</span> <br />
-                  - else
-                    | Gene symbol:     <span class='cl sym'>#{titles.symbol}</span>       <span class='missing'>Missing</span> <br />
-
-                li
-                  - if titles.name
-                    | Gene name:       <span class='cl name'>#{titles.name}</span>      <span class='exists'>Exists</span> <br />
-                  - else
-                    | Gene name:       <span class='cl name'>#{titles.name}</span>      <span class='missing'>Mising</span> <br />
-
-                li
-                  - if titles.altsym
-                    | Alternate title: <span class='cl sym_alt'>#{titles.altsym}</span> <span class='exists'>Exists</span>
-                  - else
-                    | Alternate title: <span class='cl sym_alt'>#{titles.altsym}</span> <span class='missing'>Missing</span>
-
-
-              h3.title_select
-                | Select title from above choices:</h3>
-
-              form
-                - if existingTitle
-                  input(type='text', size='60', value='{{existingTitle}}', name='title', readonly='readonly')
-                - else
-                  input(type='text', size='60', value='{{titles.name}}', name='title', readonly='readonly')
-
-                input(type='hidden', value='{entrez}', name='id')
-
-
-              button.show
-                | show stub code
-
-              - if titleExists
-                button.edit
-                  | Edit article '<span id='stub_action_title'>#{titles.name}</span>'
+                a(href='https://en.wikipedia.org/wiki/Template:PBB/{{entrez}}', target='_blank')
+                  h2 Template: PBB/#{entrez}/
+                h3 <strong>Status:</strong> <span class='bg-success'>Exists</span>
               - else
-                button.create
-                  | Create article '<span id='stub_action_title'>#{titles.name}</span>'
+                h2 Template: PBB/#{entrez}/
+                h3 <strong>Status:</strong> <span class='bg-warning'>Does Not Exists</span>
+
+          .row
+            .col-xs-12
+              form(role='form')
+              .form-group
+                a.btn.btn-sm.btn-default.toggle-textarea
+                  | Toggle Template Code
+
+                a.btn.btn-sm.btn-success.action-create
+                  - if titles.templatename
+                    | Create
+                  - else
+                    | Edit
+
+              .form-group
+                textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control
+                  #{results.template}
 
 
+
+      #stub.row
+        .col-xs-10.col-xs-offset-1.well
+          .row
+            .col-xs-12
               - if titleExists
-                button.view
-                  | view article
-              br
-              textarea(rows='15', cols='50', readonly='readonly').code
-                {{results.stub}}
+                a(href='http://en.wikipedia.org/wiki/{{titleExists}}', target='_blank')
+                  h2 Article: <span class='title'>#{titleExists}</span>
+
+                div(role='alert').alert.alert-warning
+                  p One of the titles below exists on Wikipedia; manual editing required.
+
+          .row
+            .col-xs-12
+              form(role='form')
+                .form-group
+                  h3 Possible titles:
+
+                  ul.possible-titles.list-unstyled
+                    li(data-title='{{titles.symbol}}', data-src='symbol')
+                      - if titles.symbol
+                        p <strong>Gene symbol:</strong> #{titles.symbol}</span> <strong class='bg-success'>Exists</strong>
+                      - else
+                        p <strong>Gene symbol:</strong> #{titles.symbol}</span> <strong class='bg-error'>Missing</strong>
+
+                    li(data-title='{{titles.name}}', data-src='name')
+                      - if titles.name
+                        p <strong>Gene name:</strong> #{titles.name}</span> <strong class='bg-success'>Exists</strong>
+                      - else
+                        p <strong>Gene name:</strong> #{titles.name}</span> <strong class='bg-error'>Missing</strong>
+
+                    li(data-title='{{titles.altsym}}', data-src='altsym')
+                      - if titles.altsym
+                        p <strong>Alternate title:</strong> #{titles.altsym} <strong class='bg-success'>Exists</strong>
+                      - else
+                        p <strong>Alternate title:</strong> #{titles.altsym} <strong class='bg-error'>Missing</strong>
+
+                .form-group
+                  h3 Select title from above choices:
+
+                  form(role='form')
+                    - if existingTitle
+                      input(type='text', size='60', value='{{existingTitle}}', name='title', readonly='readonly')
+                    - else
+                      input(type='text', size='60', value='{{titles.name}}', name='title', readonly='readonly')
+
+                    input(type='hidden', value='{entrez}', name='id')
+
+                .form-group
+                  a.btn.btn-default.toggle-textarea
+                    | Toggle Stub Code
+
+                  a.btn.btn-success.action-create
+                    - if titleExists
+                      | Edit Article
+                    - else
+                      | Create Article
+
+                .form-group
+                  textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control
+                    #{results.stub}
+
+
+block post-footer
+    script.
+      var titlechoice = 'altsym';
+      $('a.toggle-textarea').click(function(evt) {
+        var textarea = $(this).closest('.row').find('textarea');
+        textarea.slideToggle();
+      });
+
+
+      $('ul.possible-titles li').click(function() {
+        var title = $(this).data('title');
+        var src = $(this).data('src')
+
+        $("input[name*='title']").val(title);
+        $("input[name*='title']").change();
+      });
+
+      $('#template a.action-create').click(function() {
+        $.post(window.location.pathname, {upload:'templatename'}, function(data) {
+          console.log(data);
+        });
+      });
+
+      $('#stub a.action-create').click(function() {
+        $.post(window.location.pathname, {upload: titlechoice}, function(data) {
+          console.log(data);
+        });
+      });
+

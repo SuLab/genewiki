@@ -56,50 +56,35 @@ def article_update(request, article_id):
 @require_http_methods(['GET', 'POST'])
 def article_create(request, entrez_id):
     results = create(entrez_id, True)
+    titles = results.get('titles')
+    checked = results.get('checked')
 
-    if request.method == 'GET' and results:
-        titles = results.get('titles')
-        return render_to_response('wiki/create.jade', {
-            'templateExists': titles['templatename'],
-            'titleExists': (titles.get('name') or titles.get('symbol') or titles.get('altsym')),
+    article = Article.objects.get_infobox_for_entrez(entrez_id)
+    #Relationship.objects.create(entrez_id=entrez_id, title_url=title)
+
+    vals = {'titleExists': (titles.get('name') or titles.get('symbol') or titles.get('altsym')),
             'existingTitle': titles['altsym'] if titles.get('altsym') else titles['name'] if titles.get('name') else titles['symbol'] if titles.get('symbol') else titles['altsym'],
             'results': results,
+            'article': article,
             'titles': titles,
-            'entrez': entrez_id,}, context_instance=RequestContext(request))
-
+            'entrez': entrez_id,}
 
     if request.method == 'POST':
-        uploadopt = request.POST.get('upload', None)
-        validuploadopts = ['templatename', 'name', 'symbol', 'altsym']
-        titles = results.get('titles')
-        checked = results.get('checked')
+        uploadopt = request.POST.get('upload')
+        title = titles[uploadopt] if not checked[titles[uploadopt]] else None
+        vals['title'] = title
+        content = results['template'] if title.startswith('Template:PBB/') else results['stub']
+        Article.objects.get_or_create(title=title, text=content, force_update=True)
 
-        if uploadopt in validuploadopts:
-            title = titles[uploadopt] if not checked[titles[uploadopt]] else None
-            if title:
-                Relationship.objects.create(entrez_id=entrez_id, title_url=title)
-                content = results['template'] if title.startswith('Template:PBB/') else results['stub']
-                retcode = genewiki.upload(title, content)
-                # create corresponding talk page with appropriate project banners
-                if not title.startswith('Template:PBB/'):
-                    talk_title = "Talk:" + title
-                    talk_content = """{{WikiProjectBannerShell|
-                                      {{WikiProject Gene Wiki|class=stub|importance=low}}
-                                      {{Wikiproject MCB|class=stub|importance=low}}
-                                    }}"""
-                    talk_retcode = genewiki.upload(talk_title, talk_content)
-                else:
-                    talk_retcode = 0
-                # return code is 0 if both page and talk page write was successful; 1 if either failed
-                print (retcode or talk_retcode)
-            else:
-                return HttpResponse('Article or template already exists.')
-
-        elif uploadopt:
-            return HttpResponse('Invalid upload option.')
+        # create corresponding talk page with appropriate project banners
+        if not title.startswith('Template:PBB/'):
+            talk_title = 'Talk:'.format(title)
+            talk_content = """{{WikiProjectBannerShell|
+                              {{WikiProject Gene Wiki|class=stub|importance=low}}
+                              {{Wikiproject MCB|class=stub|importance=low}}
+                            }}"""
+            Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
 
 
-
-    # If no conditions met
-    return HttpResponse('No good :(')
+    return render_to_response('wiki/create.jade', vals, context_instance=RequestContext(request))
 

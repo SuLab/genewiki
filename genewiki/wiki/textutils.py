@@ -5,6 +5,28 @@ from genewiki.bio.g2p_redis import get_pmids, init_redis
 import re, copy, json, datetime, urllib
 
 
+def check(titles):
+    '''
+        Tries, as fast as possible, to check the presence of titles passed to it as
+        the first command-line argument.
+    '''
+    titles = [titles] if isinstance(titles, str) else titles
+    qtitles = [urllib.quote(x) for x in titles]
+    querystr = '|'.join(qtitles)
+    api = 'http://en.wikipedia.org/w/api.php?action=query&titles={title}&prop=info&redirects&format=json'
+    j = json.loads(urllib.urlopen(api.format(title=querystr)).read())
+    results = {}
+    pages = j['query']['pages']
+    if 'redirects' in j['query']:
+        redirects = j['query']['redirects']
+        for r in redirects:
+            results[r['from']] = r['to']
+    for pid in pages:
+        title = pages[pid]['title']
+        results[title] = title if int(pid) > 0 else ''
+    return results
+
+
 def create_stub(gene_id):
     '''
         Contains templates and functions for generating article stubs for the Gene Wiki
@@ -84,27 +106,6 @@ def create(entrez, force=False):
     results['checked'] = checked
     return results
 
-
-def check(titles):
-    '''
-        Tries, as fast as possible, to check the presence of titles passed to it as
-        the first command-line argument.
-    '''
-    titles = [titles] if isinstance(titles, str) else titles
-    qtitles = [urllib.quote(x) for x in titles]
-    querystr = '|'.join(qtitles)
-    api = 'http://en.wikipedia.org/w/api.php?action=query&titles={title}&prop=info&redirects&format=json'
-    j = json.loads(urllib.urlopen(api.format(title=querystr)).read())
-    results = {}
-    pages = j['query']['pages']
-    if 'redirects' in j['query']:
-        redirects = j['query']['redirects']
-        for r in redirects:
-            results[r['from']] = r['to']
-    for pid in pages:
-        title = pages[pid]['title']
-        results[title] = title if int(pid) > 0 else ''
-    return results
 
 
 class ProteinBox(object):
