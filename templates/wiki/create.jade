@@ -18,7 +18,7 @@ block content
 
           .row
             .col-xs-12
-              form(role='form', method='POST').ajax-post
+              form(role='form', method='POST')
                 - csrf_token
                 input(type='hidden', name='page_type', value='templatename')
                 .form-group
@@ -27,8 +27,8 @@ block content
                       | Toggle Template Code
 
                   - if not titles.templatename.1
-                    button(type='submit', data-style='zoom-out', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
-                      | Create Template
+                    button(type='submit', data-style='contract-overlay', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
+                      | Create
 
                 .form-group
                   textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control
@@ -47,7 +47,7 @@ block content
 
           .row
             .col-xs-12
-              form(role='form', method='POST').ajax-post
+              form(role='form', method='POST')
                 - csrf_token
                 .form-group
                   h3 Possible titles:
@@ -83,8 +83,8 @@ block content
                       | Toggle Stub Code
 
                   - if not title
-                    button(type='submit', data-style='zoom-out', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
-                      | Create Article
+                    button(type='submit', data-style='contract-overlay', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
+                      | Create
 
                 .form-group
                   textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control

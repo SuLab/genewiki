@@ -97,11 +97,10 @@ def article_create(request, entrez_id):
             Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
 
             # Save the entrez_id to title mapping for future reference
-            relationship, created = Relationship.objects.get_or_create(entrez_id=entrez_id)
-            relationship.title = title
-            relationship.save()
+            if not Relationship.objects.filter(entrez_id=entrez_id).exist():
+                Relationship.objects.create(entrez_id=entrez_id, title=title)
 
-        return HttpResponse(200)
+        return redirect('genewiki.wiki.views.article_create', entrez_id)
 
     return render_to_response('wiki/create.jade', vals, context_instance=RequestContext(request))
 
