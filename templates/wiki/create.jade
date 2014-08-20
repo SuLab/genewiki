@@ -8,88 +8,82 @@ block content
         .col-xs-10.col-xs-offset-1.well
           .row
             .col-xs-12
-              - if titles.templatename
-                a(href='https://en.wikipedia.org/wiki/Template:PBB/{{entrez}}', target='_blank')
-                  h2 Template: PBB/#{entrez}/
+              - if titles.templatename.1
+                a(href='https://en.wikipedia.org/wiki/{{titles.templatename.0}}', target='_blank')
+                  h2 #{titles.templatename.0}
                 h3 <strong>Status:</strong> <span class='bg-success'>Exists</span>
               - else
-                h2 Template: PBB/#{entrez}/
+                h2 #{titles.templatename.0}
                 h3 <strong>Status:</strong> <span class='bg-warning'>Does Not Exists</span>
 
           .row
             .col-xs-12
-              form(role='form')
-              .form-group
-                a.btn.btn-sm.btn-default.toggle-textarea
-                  | Toggle Template Code
+              form(role='form', method='POST')
+                - csrf_token
+                input(type='hidden', name='page_type', value='templatename')
+                .form-group
+                  - if results.template
+                    a.btn.btn-default.toggle-textarea
+                      | Toggle Template Code
 
-                a.btn.btn-sm.btn-success.action-create
-                  - if titles.templatename
-                    | Create
-                  - else
-                    | Edit
+                  - if not titles.templatename.1
+                    button(type='submit', data-style='zoom-out', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
+                      | Create Template
 
-              .form-group
-                textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control
-                  #{results.template}
-
-
+                .form-group
+                  textarea(rows='15', cols='50', readonly='readonly', style='display:none;').form-control
+                    #{results.template}
 
       #stub.row
         .col-xs-10.col-xs-offset-1.well
           .row
             .col-xs-12
-              - if titleExists
-                a(href='http://en.wikipedia.org/wiki/{{titleExists}}', target='_blank')
-                  h2 Article: <span class='title'>#{titleExists}</span>
+              - if title
+                a(href='http://en.wikipedia.org/wiki/{{title}}', target='_blank')
+                  h2 Article: <span class='title'>#{title}</span>
 
                 div(role='alert').alert.alert-warning
                   p One of the titles below exists on Wikipedia; manual editing required.
 
           .row
             .col-xs-12
-              form(role='form')
+              form(role='form', method='POST')
+                - csrf_token
                 .form-group
                   h3 Possible titles:
 
-                  ul.possible-titles.list-unstyled
-                    li(data-title='{{titles.symbol}}', data-src='symbol')
-                      - if titles.symbol
-                        p <strong>Gene symbol:</strong> #{titles.symbol}</span> <strong class='bg-success'>Exists</strong>
+                  .radio
+                    label
+                      - if titles.name.1
+                        input(type='radio', name='page_type', value='name', disabled='true')
+                        p <strong>Gene name:</strong> <a href='http://en.wikipedia.org/wiki/{{titles.name.0}}' target='_blank'>#{titles.name.0}</a> <strong class='bg-success'>Exists</strong>
                       - else
-                        p <strong>Gene symbol:</strong> #{titles.symbol}</span> <strong class='bg-error'>Missing</strong>
-
-                    li(data-title='{{titles.name}}', data-src='name')
-                      - if titles.name
-                        p <strong>Gene name:</strong> #{titles.name}</span> <strong class='bg-success'>Exists</strong>
+                        input(type='radio', name='page_type', value='name')
+                        p <strong>Gene name:</strong> #{titles.name.0} <strong class='bg-warning'>Missing</strong>
+                  .radio
+                    label
+                      - if titles.symbol.1
+                        input(type='radio', name='page_type', value='symbol', disabled='true')
+                        p <strong>Gene symbol:</strong> <a href='http://en.wikipedia.org/wiki/{{titles.symbol.0}}' target='_blank'>#{titles.symbol.0}</a> <strong class='bg-success'>Exists</strong>
                       - else
-                        p <strong>Gene name:</strong> #{titles.name}</span> <strong class='bg-error'>Missing</strong>
-
-                    li(data-title='{{titles.altsym}}', data-src='altsym')
-                      - if titles.altsym
-                        p <strong>Alternate title:</strong> #{titles.altsym} <strong class='bg-success'>Exists</strong>
+                        input(type='radio', name='page_type', value='symbol')
+                        p <strong>Gene symbol:</strong> #{titles.symbol.0} <strong class='bg-warning'>Missing</strong>
+                  .radio
+                    label
+                      - if titles.altsym.1
+                        input(type='radio', name='page_type', value='altsym', disabled='true')
+                        p <strong>Alternate title:</strong> <a href='http://en.wikipedia.org/wiki/{{titles.altsym.0}}' target='_blank'>#{titles.altsym.0}</a> <strong class='bg-success'>Exists</strong>
                       - else
-                        p <strong>Alternate title:</strong> #{titles.altsym} <strong class='bg-error'>Missing</strong>
+                        input(type='radio', name='page_type', value='altsym')
+                        p <strong>Alternate title:</strong> #{titles.altsym.0} <strong class='bg-warning'>Missing</strong>
 
                 .form-group
-                  h3 Select title from above choices:
+                  - if results.stub
+                    a.btn.btn-default.toggle-textarea
+                      | Toggle Stub Code
 
-                  form(role='form')
-                    - if existingTitle
-                      input(type='text', size='60', value='{{existingTitle}}', name='title', readonly='readonly')
-                    - else
-                      input(type='text', size='60', value='{{titles.name}}', name='title', readonly='readonly')
-
-                    input(type='hidden', value='{entrez}', name='id')
-
-                .form-group
-                  a.btn.btn-default.toggle-textarea
-                    | Toggle Stub Code
-
-                  a.btn.btn-success.action-create
-                    - if titleExists
-                      | Edit Article
-                    - else
+                  - if not title
+                    button(type='submit', data-style='zoom-out', data-color='green', data-size='s').btn.btn-success.ladda-button.col-xs-offset-1
                       | Create Article
 
                 .form-group
@@ -99,30 +93,11 @@ block content
 
 block post-footer
     script.
-      var titlechoice = 'altsym';
       $('a.toggle-textarea').click(function(evt) {
         var textarea = $(this).closest('.row').find('textarea');
         textarea.slideToggle();
       });
 
-
-      $('ul.possible-titles li').click(function() {
-        var title = $(this).data('title');
-        var src = $(this).data('src')
-
-        $("input[name*='title']").val(title);
-        $("input[name*='title']").change();
-      });
-
-      $('#template a.action-create').click(function() {
-        $.post(window.location.pathname, {upload:'templatename'}, function(data) {
-          console.log(data);
-        });
-      });
-
-      $('#stub a.action-create').click(function() {
-        $.post(window.location.pathname, {upload: titlechoice}, function(data) {
-          console.log(data);
-        });
-      });
+    // (TODO) Maybe auto select first non-disabled avialable choice
+    // $('input[type=radio]')
 

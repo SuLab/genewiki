@@ -1,5 +1,7 @@
 from django.db import models
 
+from genewiki.mapping.managers import RelationshipManager
+
 
 class Relationship(models.Model):
     entrez_id = models.IntegerField(blank=False)
@@ -7,6 +9,8 @@ class Relationship(models.Model):
 
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+    objects = RelationshipManager()
 
     def __unicode__(self):
         return u'{0} << >> {1}'.format(self.entrez_id, self.title)

@@ -55,26 +55,36 @@ def article_update(request, article_id):
 
 @require_http_methods(['GET', 'POST'])
 def article_create(request, entrez_id):
-    results = create(entrez_id, True)
+    results = create(entrez_id)
+
+    # We failed to gather information then return the ID error
+    if results is None:
+        return HttpResponse('Invalid or missing Entrez Identifier')
+
     titles = results.get('titles')
-    checked = results.get('checked')
-
     article = Article.objects.get_infobox_for_entrez(entrez_id)
-    #Relationship.objects.create(entrez_id=entrez_id, title_url=title)
 
-    vals = {'titleExists': (titles.get('name') or titles.get('symbol') or titles.get('altsym')),
-            'existingTitle': titles['altsym'] if titles.get('altsym') else titles['name'] if titles.get('name') else titles['symbol'] if titles.get('symbol') else titles['altsym'],
-            'results': results,
+    vals = {'results': results,
             'article': article,
             'titles': titles,
+            'title': Relationship.objects.get_title_for_entrez(entrez_id),
             'entrez': entrez_id,}
 
     if request.method == 'POST':
-        uploadopt = request.POST.get('upload')
-        title = titles[uploadopt] if not checked[titles[uploadopt]] else None
+        # Only assign this 'title' var internally if the online article status is False (not a Wikipedia page)
+        uploadopt = request.POST.get('page_type')
+        title = titles[uploadopt][0] if titles[uploadopt][1] is False else None
+
+        # The page title that they wanted to create is already online
+        if title is None:
+            return HttpResponse('Article or template already exists.')
+
         vals['title'] = title
         content = results['template'] if title.startswith('Template:PBB/') else results['stub']
-        Article.objects.get_or_create(title=title, text=content, force_update=True)
+        article, created = Article.objects.get_or_create(title=title, text=content, force_update=True)
+
+        # Save the entrez_id to title mapping for future reference
+        Relationship.objects.get_or_create(entrez_id=entrez_id, title=title)
 
         # create corresponding talk page with appropriate project banners
         if not title.startswith('Template:PBB/'):
@@ -85,6 +95,7 @@ def article_create(request, entrez_id):
                             }}"""
             Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
 
+        return HttpResponse(200)
 
     return render_to_response('wiki/create.jade', vals, context_instance=RequestContext(request))
 

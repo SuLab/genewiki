@@ -71,10 +71,7 @@ def create_stub(gene_id):
 
 
 def create(entrez, force=False):
-    results = {'titles': {},
-               'checked': {},
-               'template': '',
-               'stub': ''}
+    results = {'titles': {}, 'template': '', 'stub': ''}
 
     try:
         from genewiki.bio.mygeneinfo import get_response
@@ -83,29 +80,30 @@ def create(entrez, force=False):
         # invalid entrez
         return None
 
-    t = {}
-    t['name'] = root['name'].capitalize()
-    t['symbol'] = root['symbol']
-    t['altsym'] = t['symbol'] + ' (gene)'
-    t['templatename'] = 'Template:PBB/{0}'.format(entrez)
+    # Dictionary of each title key and tuple of it's (STR_NAME, IF_CREATED_ON_WIKI)
+    titles = {'name': (root['name'].capitalize(), False),
+              'symbol': (root['symbol'], False),
+              'altsym': ('{0} (gene)'.format(root['symbol']), False),
+              'templatename': ('Template:PBB/{0}'.format(entrez), False)}
 
-    titles = []
-    titles = [t[x] for x in t]
-    checked = check(titles)
+    # For each of the titles, build out the correct names and
+    # corresponding Boolean for if they're on Wikipedia
+    checked = check([titles[key][0] for key in titles.keys()])
+    for key, value in titles.iteritems():
+        if checked.get(value[0]):
+            titles[key] = (value[0], True)
+    results['titles'] = titles
 
-    if checked[t['templatename']] == 'missing' or force:
+    # Generate the Template code if the Template isn't on Wikipedia
+    if not titles['templatename'][1] or force:
         from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
         results['template'] = str(generate_protein_box_for_entrez(entrez))
 
-    if not (checked[t['name']] or checked[t['symbol']]
-            or checked[t['altsym']]) or force:
-
+    # Generate the Stub code if the Page (for any of the possible names) isn't on Wikipedia
+    if not (titles['name'][1] or titles['symbol'][1] or titles['altsym'][1]) or force:
         results['stub'] = create_stub(entrez)
 
-    results['titles'] = t
-    results['checked'] = checked
     return results
-
 
 
 class ProteinBox(object):
