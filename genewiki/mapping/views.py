@@ -19,6 +19,5 @@ def wiki_mapping(request, entrez_id):
         Lookup.objects.create(relationship=relationship)
         return redirect(u'http://en.wikipedia.org/wiki/{0}'.format(relationship.title))
     else:
-        return redirect(u'http://plugins.biogps.org/cgi-bin/gwgenerator.cgi?id={0}'.format(entrez_id))
-
+        return redirect('genewiki.wiki.views.article_create', entrez_id)
 

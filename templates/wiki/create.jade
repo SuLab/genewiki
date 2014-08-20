@@ -18,7 +18,7 @@ block content
 
           .row
             .col-xs-12
-              form(role='form', method='POST')
+              form(role='form', method='POST').ajax-post
                 - csrf_token
                 input(type='hidden', name='page_type', value='templatename')
                 .form-group
@@ -47,7 +47,7 @@ block content
 
           .row
             .col-xs-12
-              form(role='form', method='POST')
+              form(role='form', method='POST').ajax-post
                 - csrf_token
                 .form-group
                   h3 Possible titles:

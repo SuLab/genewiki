@@ -73,6 +73,9 @@ def article_create(request, entrez_id):
     if request.method == 'POST':
         # Only assign this 'title' var internally if the online article status is False (not a Wikipedia page)
         uploadopt = request.POST.get('page_type')
+        if uploadopt is None:
+            return HttpResponse('Must select title option.')
+
         title = titles[uploadopt][0] if titles[uploadopt][1] is False else None
 
         # The page title that they wanted to create is already online
@@ -80,20 +83,23 @@ def article_create(request, entrez_id):
             return HttpResponse('Article or template already exists.')
 
         vals['title'] = title
-        content = results['template'] if title.startswith('Template:PBB/') else results['stub']
-        article, created = Article.objects.get_or_create(title=title, text=content, force_update=True)
-
-        # Save the entrez_id to title mapping for future reference
-        Relationship.objects.get_or_create(entrez_id=entrez_id, title=title)
+        is_template = title.startswith('Template:PBB/')
+        content = results['template'] if is_template else results['stub']
+        Article.objects.get_or_create(title=title, text=content, article_type=Article.INFOBOX if is_template else Article.PAGE, force_update=True)
 
         # create corresponding talk page with appropriate project banners
-        if not title.startswith('Template:PBB/'):
-            talk_title = 'Talk:'.format(title)
+        if not is_template:
+            talk_title = 'Talk:{0}'.format(title)
             talk_content = """{{WikiProjectBannerShell|
                               {{WikiProject Gene Wiki|class=stub|importance=low}}
                               {{Wikiproject MCB|class=stub|importance=low}}
                             }}"""
             Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
+
+            # Save the entrez_id to title mapping for future reference
+            relationship, created = Relationship.objects.get_or_create(entrez_id=entrez_id)
+            relationship.title = title
+            relationship.save()
 
         return HttpResponse(200)
 
