@@ -18,5 +18,5 @@ $('.ajax-post').on('submit', function(evt) {
     });
 });
 
-Ladda.bind( '#template .ladda-button' )
-Ladda.bind( '#stub .ladda-button' );
+Ladda.bind('#template .ladda-button')
+Ladda.bind('#stub .ladda-button');
