@@ -97,7 +97,7 @@ def article_create(request, entrez_id):
             Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
 
             # Save the entrez_id to title mapping for future reference
-            if not Relationship.objects.filter(entrez_id=entrez_id).exist():
+            if not Relationship.objects.filter(entrez_id=entrez_id).exists():
                 Relationship.objects.create(entrez_id=entrez_id, title=title)
 
         return redirect('genewiki.wiki.views.article_create', entrez_id)
