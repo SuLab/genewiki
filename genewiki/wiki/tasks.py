@@ -9,13 +9,13 @@ from celery import task
 
 @task()
 def collect_template_pages():
-    bot = Bot.objects.filter(service_type='wiki').first()
-    bot.update_articles()
+    bot = Bot.objects.get_pbb()
+    bot.fetch_update_articles()
 
 
 @task()
 def update_all_infoboxes():
-    for infobox in Article.objects.all(article_type=Article.INFOBOX):
+    for infobox in Article.objects.all_infoboxes():
         infobox.update()
 
 

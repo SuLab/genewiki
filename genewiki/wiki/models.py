@@ -42,7 +42,7 @@ class Bot(models.Model):
         for item in lists:
             print item['title']
 
-    def update_articles(self):
+    def fetch_update_articles(self):
         connection = self.connection()
         gpb = connection.Pages['Template:GNF_Protein_box']
         for page in gpb.embeddedin('10'):
@@ -97,7 +97,7 @@ class Article(models.Model):
             return None
 
     def get_page(self):
-        bot = Bot.objects.filter(service_type='wiki').first()
+        bot = Bot.objects.get_pbb()
         connection = bot.connection()
         return connection.Pages[self.title]
 

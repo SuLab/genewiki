@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+
 CELERYBEAT_SCHEDULE = {
     'update-template-pages-index': {
         'task': 'genewiki.wiki.tasks.collect_template_pages',

@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 
 def home(request, page_num=1):
-    article_list = Article.objects.all()
+    article_list = Article.objects.all_infoboxes()
 
     article_list_paginator = Paginator(article_list, 200)
     try:

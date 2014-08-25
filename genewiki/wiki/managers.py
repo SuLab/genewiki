@@ -11,10 +11,13 @@ class BotManager(models.Manager):
         return self.filter(service_type='wiki').order_by('?')[0]
 
     def get_pbb(self):
-        return self.filter(service_type='wiki').order_by('?')[0]
+        return self.filter(service_type='wiki').first()
 
 
 class ArticleManager(models.Manager):
+
+    def all_infoboxes(self):
+        return self.filter(article_type=self.model.INFOBOX).all()
 
     def get_infobox_for_entrez(self, entrez):
         title = 'Template:PBB/{0}'.format(entrez)
