@@ -3,6 +3,9 @@ genewiki
 
 The GeneWiki Project
 
+### Overview
+The code in this repo handles the automated updates of gene templates, and as well as the on-request article creation requests from the BioGPS plugin (http://biogps.org/genewikigenerator/).  Both types of edits are made under the ProteinBoxBot Wikipedia account.
+
 ### Project Setup
 
 #### Server Dependencies
