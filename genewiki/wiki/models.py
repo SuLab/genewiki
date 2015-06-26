@@ -29,7 +29,8 @@ class Bot(models.Model):
     objects = BotManager()
 
     def connection(self):
-        connection = mwclient.Site(settings.BASE_SITE)
+        useragent = 'Protein Box Bot, Run by The Scripps Research Institute: nanis@scripps.edu'
+        connection = mwclient.Site(('https', settings.BASE_SITE), clients_useragent=useragent)
         connection.login(self.username, self.password)
         return connection
 
