@@ -263,7 +263,7 @@ class ProteinBox(object):
           using the following rule:
 
           If the target's field value is missing or equal to this one's, this one's value is used. Otherwise,
-          the target's value is used. (Easy enough).
+          the target's value is used. (Easy enough). 
 
           Returns the new ProteinBox with the new fields and a summary message describing the fields updated.
           Also returns a updatedFields dict, which stores data as such: {field_changed:(old, new), ...}
@@ -284,11 +284,15 @@ class ProteinBox(object):
             srcval = src[field]
             tgtval = tgt[field]
 
-            if tgtval and srcval != tgtval:
-                updatedFields[field] = (srcval, tgtval)
-                new.setField(field, tgtval)
-            else:
-                new.setField(field, srcval)
+	    #First check if field is an image and don't overwrite if looks like a file with extension
+	    if field == 'image' and re.match(r'\w+\.\w+', srcval):
+		new.setField(field,srcval)
+	    else:
+            	if tgtval and srcval != tgtval:
+                	updatedFields[field] = (srcval, tgtval)
+                	new.setField(field, tgtval)
+            	else:
+                	new.setField(field, srcval)
 
         # Default summary message; changes if fields were updated
         summary = 'Minor aesthetic updates.'
