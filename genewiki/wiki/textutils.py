@@ -285,14 +285,14 @@ class ProteinBox(object):
             tgtval = tgt[field]
 
 	    #First check if field is an image and don't overwrite if looks like a file with extension
-	    if field == 'image' and re.match(r'\w+\.\w+', srcval):
-		new.setField(field,srcval)
-	    else:
-            	if tgtval and srcval != tgtval:
-                	updatedFields[field] = (srcval, tgtval)
-                	new.setField(field, tgtval)
-            	else:
-                	new.setField(field, srcval)
+            if field == 'image' and re.match(r'\w+\.\w+', srcval):
+                new.setField(field,srcval)
+            else:
+                if tgtval and srcval != tgtval:
+                    updatedFields[field] = (srcval, tgtval)
+                    new.setField(field, tgtval)
+                else:
+                    new.setField(field, srcval)
 
         # Default summary message; changes if fields were updated
         summary = 'Minor aesthetic updates.'
