@@ -284,8 +284,8 @@ class ProteinBox(object):
             srcval = src[field]
             tgtval = tgt[field]
 
-	    #First check if field is an image and don't overwrite if looks like a file with extension
-            if field == 'image' and re.match(r'\w+\.\w+', srcval):
+	    #First check if field is an image and don't overwrite
+            if field == 'image' and srcval:
                 new.setField(field,srcval)
             else:
                 if tgtval and srcval != tgtval:
