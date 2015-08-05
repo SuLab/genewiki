@@ -46,12 +46,16 @@ def create_stub(gene_id):
         footer = '{{NLM content}}'
 
     genomic_pos = root.get('genomic_pos')[0] if isinstance(root.get('genomic_pos'), list) else root.get('genomic_pos')
+    if genomic_pos:
+         chromo = genomic_pos.get('chr')
+    else:
+         chromo = ''
     values = {
         'id': root.get('entrezgene'),
         'name': root.get('name')[0].capitalize() + root.get('name')[1:],
         'symbol': root.get('symbol'),
         'summary': summary,
-        'chromosome': genomic_pos.get('chr'),
+        'chromosome': chromo,
         'currentdate': datetime.datetime.now().isoformat('T') + '-08:00',  # adjust if not in CA
         'citations': '',
         'footer': footer

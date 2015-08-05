@@ -71,16 +71,19 @@ def get_homolog(json_res):
       Arguments:
       - `json_res`:  the mygene.info json document for original gene
     '''
-    homologs = json_res.get('homologene').get('genes')
-    # isolate our particular taxon (returns [[taxon, gene]])
-    if homologs:
-        pair = filter(lambda x: x[0] == settings.MOUSE_TAXON_ID, homologs)
-        if pair:
-            return pair[0][1]
-        else:
-            return None
-    else:
+    if json_res.get('genes') == None:
         return None
+    else:
+       homologs = json_res.get('homologene').get('genes')
+       # isolate our particular taxon (returns [[taxon, gene]])
+       if homologs:
+           pair = filter(lambda x: x[0] == settings.MOUSE_TAXON_ID, homologs)
+           if pair:
+               return pair[0][1]
+           else:
+               return None
+       else:
+           return None
 
 
 def get_response(entrez):
@@ -117,9 +120,11 @@ def generate_protein_box_for_entrez(entrez):
     box.setField('AltSymbols', root.get('alias'))
     box.setField('OMIM', root.get('MIM'))
     box.setField('ECnumber', root.get('ec'))
-    box.setField('Homologene', root.get('homologene').get('id'))
+    if homolog:
+         box.setField('Homologene', root.get('homologene').get('id'))
     ensembl = root.get('ensembl')
-    box.setField('Hs_Ensembl', ensembl[0].get('gene') if isinstance(ensembl, list) else ensembl.get('gene'))
+    if ensembl:
+         box.setField('Hs_Ensembl', ensembl[0].get('gene') if isinstance(ensembl, list) else ensembl.get('gene'))
 
     refseq = root.get('refseq')
     box.setField('Hs_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein'))
@@ -128,9 +133,10 @@ def generate_protein_box_for_entrez(entrez):
     box.setField('Hs_GenLoc_db', meta.get('genome_assembly').get('human'))
 
     genomic_pos = root.get('genomic_pos')[0] if isinstance(root.get('genomic_pos'), list) else root.get('genomic_pos')
-    box.setField('Hs_GenLoc_chr', genomic_pos.get('chr'))
-    box.setField('Hs_GenLoc_start', genomic_pos.get('start'))
-    box.setField('Hs_GenLoc_end', genomic_pos.get('end'))
+    if genomic_pos:
+         box.setField('Hs_GenLoc_chr', genomic_pos.get('chr'))
+         box.setField('Hs_GenLoc_start', genomic_pos.get('start'))
+         box.setField('Hs_GenLoc_end', genomic_pos.get('end'))
     box.setField('path', 'PBB/{}'.format(entrez))
 
     go = root.get('go', None)
