@@ -120,11 +120,12 @@ class Article(models.Model):
           Returns an updated infobox and summary from data gathered from the
           specified page.
         '''
+        page = self.get_page()
+        text = page.text()
         # Dictionary of fields to build a ProteinBox from
         mgibox = generate_protein_box_for_entrez(self.get_entrez())
-
         # Returns processed ProteinBox object
-        current_box = generate_protein_box_for_existing_article(self.text)
+        current_box = generate_protein_box_for_existing_article(text)
 
         # Run the comparision between the current box online
         # and the dictionary just generated from mygene
