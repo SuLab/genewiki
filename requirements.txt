@@ -19,7 +19,7 @@ httplib2==0.9
 ipython==2.1.0
 kombu==3.0.21
 mccabe==0.2.1
-mwclient==0.6.5
+mwclient==0.7.2
 mygene==2.1.0
 pep8==1.5.7
 pyflakes==0.8.1
@@ -27,8 +27,8 @@ pyjade==2.2.0
 pytz==2014.4
 raven==5.0.0
 redis==2.10.1
-requests==2.3.0
+requests==2.7.0
 simplejson==3.5.3
-six==1.7.3
+six==1.9.0
 sqlparse==0.1.11
 wsgiref==0.1.2
