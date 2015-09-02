@@ -4,6 +4,7 @@ South==1.0
 Werkzeug==0.9.6
 amqp==1.4.5
 anyjson==0.3.3
+argparse==1.2.1
 billiard==3.3.0.18
 celery==3.1.13
 django-celery==3.1.10

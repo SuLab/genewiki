@@ -127,7 +127,11 @@ def generate_protein_box_for_entrez(entrez):
          box.setField('Hs_Ensembl', ensembl[0].get('gene') if isinstance(ensembl, list) else ensembl.get('gene'))
 
     refseq = root.get('refseq')
-    box.setField('Hs_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein'))
+    if refseq == None:
+        return None
+    else:
+        box.setField('Hs_RefseqProtein', refseq.get('protein')[0] if isinstance(refseq.get('protein'), list) else refseq.get('protein'))
+
     box.setField('Hs_RefseqmRNA', refseq.get('rna')[0] if isinstance(refseq.get('rna'), list) else refseq.get('rna'))
 
     box.setField('Hs_GenLoc_db', meta.get('genome_assembly').get('human'))
