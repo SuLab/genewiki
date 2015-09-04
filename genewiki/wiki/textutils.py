@@ -56,7 +56,7 @@ def create_stub(gene_id):
         'symbol': root.get('symbol'),
         'summary': summary,
         'chromosome': chromo,
-        'currentdate': datetime.datetime.now().isoformat('T') + '-08:00',  # adjust if not in CA
+        'currentdate': datetime.date.today().isoformat(),  # adjust if not in CA
         'citations': '',
         'footer': footer
     }
