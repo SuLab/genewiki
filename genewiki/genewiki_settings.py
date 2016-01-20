@@ -25,7 +25,7 @@ G2P_DATABASE = 'g2p.db'  # change this if different
 # An unfortunate collision between the {} system used for Python's str.format()
 # and Mediawiki's template syntax requires all {{templates}} to be escaped like
 # so: {{{{templates}}}} (single {'s => {{).
-STUB_SKELETON = """{{{{PBB|geneid={id}}}}}
+STUB_SKELETON = """{{{{Infobox_gene}}}}
 
 '''{name}''' is a [[protein]] that in humans is encoded by the {symbol} [[gene]].{entrezcite}
 {summary}

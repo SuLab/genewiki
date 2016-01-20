@@ -9,7 +9,7 @@ from genewiki.mapping.models import Relationship
 from genewiki.wiki.models import Article
 from genewiki.wiki.tasks import update_articles
 
-from genewiki.wiki.textutils import create
+from genewiki.wiki.textutils import create, interwiki_link
 
 from datetime import datetime, timedelta
 
@@ -95,6 +95,9 @@ def article_create(request, entrez_id):
                               {{Wikiproject MCB|class=stub|importance=low}}
                             }}"""
             Article.objects.get_or_create(title=talk_title, text=talk_content, article_type=Article.TALK, force_update=True)
+            #create interwiki link
+            link = interwiki_link(entrez_id, title)
+     
 
             # Save the entrez_id to title mapping for future reference
             if not Relationship.objects.filter(entrez_id=entrez_id).exists():

@@ -1,8 +1,9 @@
 from django.conf import settings
+from django.db import models
 
 from genewiki.bio.g2p_redis import get_pmids, init_redis
 
-import re, copy, json, datetime, urllib
+import re, copy, json, datetime, urllib, PBB_Core, PBB_login
 
 
 def check(titles):
@@ -32,6 +33,7 @@ def create_stub(gene_id):
         Contains templates and functions for generating article stubs for the Gene Wiki
         Project on Wikipedia.
     '''
+
     try:
         from genewiki.bio.mygeneinfo import get_response
         root, meta, homolog, entrez, uniprot = get_response(gene_id)
@@ -83,32 +85,70 @@ def create(entrez, force=False):
     except ValueError:
         # invalid entrez
         return None
+ 
+    # Query wikidata for existance of entrez_id don't create new pages for entrez_ids not in wikidata
 
-    # Dictionary of each title key and tuple of it's (STR_NAME, IF_CREATED_ON_WIKI)
-    titles = {'name': (root['name'].capitalize(), False),
-              'symbol': (root['symbol'], False),
-              'altsym': ('{0} (gene)'.format(root['symbol']), False),
-              'templatename': ('Template:PBB/{0}'.format(entrez), False)}
+    entrez_query = """
+        SELECT ?entrez_id  WHERE {
+        ?cid wdt:P351 ?entrez_id  .
+        FILTER(?entrez_id ='"""+str(entrez)+"""') .
+    }
+    """
 
-    # For each of the titles, build out the correct names and
-    # corresponding Boolean for if they're on Wikipedia
-    checked = check([titles[key][0] for key in titles.keys()])
-    for key, value in titles.iteritems():
-        if checked.get(value[0]):
-            titles[key] = (value[0], True)
-    results['titles'] = titles
+    wikidata_results = PBB_Core.WDItemEngine.execute_sparql_query(prefix=settings.PREFIX, query=entrez_query)['results']['bindings']
+    entrez_id = ''
+    for x in wikidata_results:
+	entrez_id = x['entrez_id']['value']
+    if entrez_id != str(entrez):
+        return None
+    else:
+       # Dictionary of each title key and tuple of it's (STR_NAME, IF_CREATED_ON_WIKI)
+       titles = {'name': (root['name'].capitalize(), False),
+                 'symbol': (root['symbol'], False),
+                 'test': (entrez_id, False),
+                 'altsym': ('{0} (gene)'.format(root['symbol']), False),
+                 'templatename': ('Template:PBB/{0}'.format(entrez), False)}
 
-    # Generate the Template code if the Template isn't on Wikipedia
-    if not titles['templatename'][1] or force:
-        from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
-        results['template'] = str(generate_protein_box_for_entrez(entrez))
+       # For each of the titles, build out the correct names and
+       # corresponding Boolean for if they're on Wikipedia
+       checked = check([titles[key][0] for key in titles.keys()])
+       for key, value in titles.iteritems():
+           if checked.get(value[0]):
+               titles[key] = (value[0], True)
+       results['titles'] = titles
 
-    # Generate the Stub code if the Page (for any of the possible names) isn't on Wikipedia
-    if not (titles['name'][1] or titles['symbol'][1] or titles['altsym'][1]) or force:
-        results['stub'] = create_stub(entrez)
+       # Generate the Stub code if the Page (for any of the possible names) isn't on Wikipedia
+       if not (titles['name'][1] or titles['symbol'][1] or titles['altsym'][1]) or force:
+           results['stub'] = create_stub(entrez)
 
-    return results
+       return results
 
+def interwiki_link(entrez, name):
+    # Query wikidata for Q-item id (cid)
+
+    cid_query = """
+        SELECT ?cid  WHERE {
+        ?cid wdt:P351 ?entrez_id  .
+        FILTER(?entrez_id ='"""+str(entrez)+"""') .
+    }
+    """
+
+    wikidata_results = PBB_Core.WDItemEngine.execute_sparql_query(prefix=settings.PREFIX, query=cid_query)['results']['bindings']
+    cid = ''
+    for x in wikidata_results:
+        cid = x['cid']['value'].split('/')[-1]
+
+    #create interwiki link
+    username = models.CharField(max_length=200, blank=False)
+    password = models.CharField(max_length=200, blank=False)
+    # create your login object with your user and password (or the ProteinBoxBot account?)
+    login_obj = PBB_login.WDLogin(user=username, pwd=password)
+    # load the gene Wikidata object
+    wd_gene_item = PBB_Core.WDItemEngine(wd_item_id=cid)
+    # set the interwiki link to the correct Wikipedia page
+    wd_gene_item.set_sitelink(site='enwiki', title=name)
+    # write the changes to the item
+    wd_gene_item.write(login_obj)
 
 class ProteinBox(object):
     '''
