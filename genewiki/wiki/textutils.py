@@ -142,7 +142,8 @@ def interwiki_link(entrez, name):
     username = models.CharField(max_length=200, blank=False)
     password = models.CharField(max_length=200, blank=False)
     # create your login object with your user and password (or the ProteinBoxBot account?)
-    login_obj = PBB_login.WDLogin(user=username, pwd=password)
+    bot = Bot.objects.get_pbb()
+    login_obj = models.bot.connect_wikidata()
     # load the gene Wikidata object
     wd_gene_item = PBB_Core.WDItemEngine(wd_item_id=cid)
     # set the interwiki link to the correct Wikipedia page

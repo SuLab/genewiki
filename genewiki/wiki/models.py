@@ -5,9 +5,10 @@ from genewiki.wiki.managers import BotManager, ArticleManager
 from genewiki.wiki.textutils import generate_protein_box_for_existing_article
 from genewiki.bio.mygeneinfo import generate_protein_box_for_entrez
 
+
 from raven.contrib.django.raven_compat.models import client
 
-import mwclient, re, logging
+import mwclient, re, logging, PBB_login
 from mwclient.errors import *
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,10 @@ class Bot(models.Model):
 
         connection.login(self.username, self.password)
         return connection
+
+    def connect_wikidata(self):
+	login_obj = PBB_login.WDLogin(user=self.username, pwd=self.password)
+    return login_obj
 
     def previous_actions(self, limit=500):
         '''
