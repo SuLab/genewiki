@@ -36,10 +36,6 @@ class Bot(models.Model):
         connection.login(self.username, self.password)
         return connection
 
-    def connect_wikidata(self):
-	login_obj = PBB_login.WDLogin(user=self.username, pwd=self.password)
-        return login_obj
-
     def previous_actions(self, limit=500):
         '''
             Prints the last 500 actions (title) the bot has taken
@@ -62,7 +58,6 @@ class Bot(models.Model):
 
     def __unicode__(self):
         return u'{0} ({1})'.format(self.username, self.service_type)
-
 
 class Article(models.Model):
     title = models.CharField(max_length=200, blank=False)
