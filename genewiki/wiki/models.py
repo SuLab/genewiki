@@ -38,7 +38,7 @@ class Bot(models.Model):
 
     def connect_wikidata(self):
 	login_obj = PBB_login.WDLogin(user=self.username, pwd=self.password)
-    return login_obj
+        return login_obj
 
     def previous_actions(self, limit=500):
         '''
